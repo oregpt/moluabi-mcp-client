@@ -1,0 +1,250 @@
+# MoluAbi MCP Server
+
+> **Production-Ready Model Context Protocol (MCP) Server for AI Agent Management**
+
+The MoluAbi MCP Server provides programmatic access to MoluAbi's AI agent management capabilities through the Model Context Protocol, enabling any MCP-compatible client to create, manage, and interact with intelligent AI assistants.
+
+## 🚀 Features
+
+### Core Agent Management
+- **Create Agents**: Build AI assistants with custom instructions and capabilities
+- **Manage Access**: Grant/revoke user access to agents with fine-grained permissions
+- **Delete Agents**: Safely remove agents and associated data
+- **List Agents**: Query agents by user permissions and ownership
+
+### Advanced Capabilities  
+- **Prompt Agents**: Send messages and receive AI-powered responses
+- **Usage Tracking**: Monitor token consumption and costs
+- **File Management**: Upload and manage knowledge base documents
+- **User Management**: Handle user accounts and permissions
+
+### Payment Integration Architecture
+- **Pluggable Payment System**: Switch between no-payment, ATXP, and subscription models
+- **Pay-per-Use Ready**: Built for potential ATXP integration ($0.05 per action)
+- **Free Mode**: Full functionality available without payment during development
+
+## 🛠 Installation & Setup
+
+### Prerequisites
+- Node.js 18+ 
+- PostgreSQL database
+- Environment variables configured
+
+### Quick Start
+
+```bash
+# Navigate to MCP server directory
+cd mcp-server
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Start the server
+npm run dev
+```
+
+### Production Build
+
+```bash
+# Build TypeScript
+npm run build
+
+# Start production server
+npm start
+```
+
+## 🔧 Available Tools
+
+The MCP server exposes 10 tools for comprehensive agent management:
+
+| Tool | Description | Usage |
+|------|-------------|-------|
+| `create_agent` | Create new AI assistant | Define name, instructions, type |
+| `delete_agent` | Remove agent and data | Requires ownership permissions |
+| `list_agents` | Query accessible agents | Filter by user, ownership |
+| `get_agent` | Retrieve agent details | Get configuration and metadata |
+| `update_agent` | Modify agent settings | Change instructions, visibility |
+| `add_user_to_agent` | Grant user access | Email-based user management |
+| `remove_user_from_agent` | Revoke access | Remove specific user permissions |
+| `prompt_agent` | Send messages to agent | Get AI-powered responses |
+| `upload_file_to_agent` | Add knowledge base files | Support PDF, DOCX, TXT, MD |
+| `get_usage_report` | Track consumption | Monitor costs and token usage |
+
+## 📖 Usage Examples
+
+### Create an AI Assistant
+
+```json
+{
+  "tool": "create_agent",
+  "arguments": {
+    "name": "Customer Support Bot",
+    "description": "Handles customer inquiries and support requests",
+    "instructions": "You are a helpful customer support agent. Always be polite and thorough.",
+    "userId": "user123",
+    "type": "file-based",
+    "isPublic": false
+  }
+}
+```
+
+### Grant User Access
+
+```json
+{
+  "tool": "add_user_to_agent",
+  "arguments": {
+    "agentId": 42,
+    "userEmail": "teammate@company.com",
+    "ownerId": "user123"
+  }
+}
+```
+
+### Send Message to Agent
+
+```json
+{
+  "tool": "prompt_agent",
+  "arguments": {
+    "agentId": 42,
+    "message": "How do I reset my password?",
+    "userId": "user123"
+  }
+}
+```
+
+## 🏗 Architecture
+
+### Database Integration
+- **Shared Schema**: Uses same PostgreSQL database as main MoluAbi platform
+- **Data Consistency**: Agents created via MCP appear in web UI and vice versa
+- **Vector Search**: Integrated with existing knowledge base and semantic search
+
+### Payment System
+```typescript
+// Pluggable architecture supports multiple payment models
+interface PaymentProvider {
+  validatePayment(userId: string, action: string): Promise<boolean>;
+  recordUsage(userId: string, action: string, cost: number): Promise<void>;
+}
+
+// Currently supports:
+// - NoPaymentProvider (free access)
+// - AtxpPaymentProvider (pay-per-use, $0.05/action)
+// - SubscriptionPaymentProvider (monthly plans)
+```
+
+### Security
+- **User Validation**: All operations require valid user authentication
+- **Permission Checks**: Agent access controlled by ownership and granted permissions
+- **Input Validation**: Zod schemas validate all tool arguments
+
+## 🔌 MCP Client Integration
+
+### Claude Desktop
+
+Add to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "moluabi": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/mcp-server/src/server.ts"],
+      "env": {
+        "DATABASE_URL": "your_database_url"
+      }
+    }
+  }
+}
+```
+
+### Other MCP Clients
+
+The server follows standard MCP protocol and works with any compatible client:
+- Cline (VS Code)
+- Continue.dev
+- Custom MCP implementations
+
+## 💰 Payment Models
+
+### 1. No-Payment Mode (Current)
+- **Status**: Active during development
+- **Access**: Full functionality, no restrictions
+- **Use Case**: Testing, development, free tier
+
+### 2. ATXP Integration (Experimental)
+- **Model**: Pay-per-use with microtransactions
+- **Pricing**: ~$0.05 per agent action
+- **Benefits**: Granular cost control, usage-based monetization
+- **Status**: Architecture ready, integration pending
+
+### 3. Subscription Model
+- **Model**: Monthly/yearly plans
+- **Tiers**: Different usage limits and features
+- **Status**: Ready for implementation
+
+## 🔍 Monitoring & Observability
+
+### Usage Tracking
+```bash
+# Get comprehensive usage report
+{
+  "tool": "get_usage_report",
+  "arguments": {
+    "userId": "user123",
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  }
+}
+```
+
+### Health Checks
+- **Database Connection**: Automatic validation on startup
+- **Payment System**: Initialization status logged
+- **Tool Registration**: Confirms all 10 tools loaded
+
+## 🚀 Strategic Value
+
+### For MoluAbi Platform
+- **Infrastructure Extension**: Positions MoluAbi beyond web UI as API provider
+- **Developer Ecosystem**: Enables third-party integrations and custom clients
+- **Revenue Diversification**: Multiple monetization models (subscription + pay-per-use)
+
+### For Users
+- **Client Flexibility**: Use MoluAbi agents in any MCP-compatible environment
+- **Programmatic Access**: Automate agent creation and management
+- **Cost Efficiency**: Pay only for what you use (with ATXP model)
+
+## 🔄 Development Status
+
+✅ **COMPLETED**
+- Full MCP server implementation
+- 10 production-ready tools
+- Database integration
+- Payment architecture
+- Security validation
+- Documentation
+
+🔬 **EXPERIMENTAL**
+- ATXP payment integration
+- Advanced usage analytics
+- Custom pricing models
+
+## 📞 Support
+
+For issues, feature requests, or integration help:
+- **Platform UI**: Available through main MoluAbi dashboard
+- **Documentation**: See `/docs` for detailed API reference
+- **Community**: MCP Protocol community forums
+
+---
+
+**Built with ❤️ for the AI agent ecosystem**
+
+*Transform your AI workflow with programmatic agent management*
