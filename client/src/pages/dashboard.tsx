@@ -39,23 +39,8 @@ export default function Dashboard() {
     enabled: false, // Only fetch when manually triggered
   });
 
-  // Default pricing (fallback)
-  const defaultPricing = {
-    create_agent: 0.05,
-    list_agents: 0.001,
-    get_agent: 0.001,
-    update_agent: 0.02,
-    delete_agent: 0.01,
-    add_user_to_agent: 0.005,
-    remove_user_from_agent: 0.005,
-    prompt_agent: 0.01,
-    upload_file_to_agent: 0.05,
-    get_usage_report: 0.002,
-    refresh_pricing: 0.001
-  };
-
-  // Use live pricing if available, otherwise use defaults
-  const currentPricing = pricingData?.pricing?.pricing || defaultPricing;
+  // No default pricing - must come from real MCP server
+  const currentPricing = pricingData?.pricing?.pricing || {};
 
   const toolConfigs = {
     create_agent: {

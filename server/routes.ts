@@ -23,11 +23,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const agent = await storage.createAgent(agentData);
       
-      // Record tool usage
+      // Record tool usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "create_agent",
-        cost: "0.05",
+        cost: "0.00", // Will be updated when real pricing is available
         status: "success",
         request: req.body,
         response: { agent },
@@ -45,11 +45,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agents = await storage.getUserAgents(userId);
       
-      // Record tool usage
+      // Record tool usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "list_agents",
-        cost: "0.001",
+        cost: "0.00", // Will be updated when real pricing is available
         status: "success",
         request: { userId },
         response: { agents: agents.length },
@@ -72,12 +72,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Agent not found or access denied" });
       }
 
-      // Record tool usage
+      // Record tool usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "get_agent",
         agentId,
-        cost: "0.001",
+        cost: "0.00", // Will be updated when real pricing is available
         status: "success",
         request: { agentId, userId },
         response: { agent: agent.id },
@@ -100,12 +100,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Agent not found or access denied" });
       }
 
-      // Record tool usage
+      // Record tool usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "update_agent",
         agentId,
-        cost: "0.02",
+        cost: "0.00", // Will be updated when real pricing is available
         status: "success",
         request: { agentId, updates: req.body },
         response: { agent: updatedAgent.id },
@@ -128,12 +128,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Agent not found or access denied" });
       }
 
-      // Record tool usage
+      // Record tool usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "delete_agent",
         agentId,
-        cost: "0.01",
+        cost: "0.00", // Will be updated when real pricing is available
         status: "success",
         request: { agentId, userId },
         response: { deleted: true },
@@ -152,11 +152,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
       
-      // Validate payment
+      // Validate payment - no hardcoded cost
       const paymentValid = await atxpService.validatePayment({
         userId,
         toolName,
-        cost: 0.05,
+        cost: 0, // Will be updated when real pricing is available
       });
 
       if (!paymentValid) {
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let mcpResponse;
       let status = "success";
       let errorMessage;
-      let actualCost = 0.05; // Default fallback
+      let actualCost = 0; // No fallback - must come from MCP response
 
       try {
         mcpResponse = await mcpClient.callTool({
@@ -265,11 +265,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
-      // Validate payment for get_pricing tool
+      // Validate payment for get_pricing tool - no hardcoded cost
       const paymentValid = await atxpService.validatePayment({
         userId,
         toolName: "get_pricing",
-        cost: 0.001,
+        cost: 0, // Will be updated when real pricing is available
       });
 
       if (!paymentValid) {
@@ -295,21 +295,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const executionTime = Date.now() - startTime;
 
-      // Process payment if successful
+      // Process payment if successful - no hardcoded cost
       if (status === "success") {
         await atxpService.processPayment({
           userId,
           toolName: "get_pricing",
-          cost: 0.001,
+          cost: 0, // Will be updated when real pricing is available
         });
       }
 
-      // Record usage
+      // Record usage - no hardcoded cost
       await storage.recordToolUsage({
         userId,
         toolName: "get_pricing",
         agentId: undefined,
-        cost: status === "success" ? "0.001" : "0.00",
+        cost: "0.00", // Will be updated when real pricing is available
         executionTime,
         status,
         errorMessage,
@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         pricing: mcpResponse,
-        cost: 0.001,
+        cost: 0, // Will be updated when real pricing is available
         executionTime,
       });
     } catch (error) {
