@@ -1,0 +1,146 @@
+# Agent Quickstart
+
+> Use ATXP to build agents that pay for tool calls
+
+Build agents that can safely discover and use paid MCP (Model Context Protocol) tools without creating vendor accounts or managing API keys. With ATXP, your agent brings a wallet and pays per request, so you can start building immediately and ship faster.
+
+* **Reduced friction**: Try new tools in minutes—no signups, no keys, no billing setup.
+* **Pay‑as‑you‑go cost control**: Per‑MCP‑tool‑call pricing; you only pay for what you use.
+* **Better security**: Keep secrets out of your app; requests are authorized with signed payments instead of shared keys.
+* **Composable tooling**: Combine multiple paid MCP servers behind a single client and consistent API.
+
+## Build your first ATXP agent
+
+<Steps>
+  <Step title="Install the library">
+    Install the [ATXP client SDK](https://www.npmjs.com/package/@atxp/client) in your project:
+
+    ```bash
+    npm install @atxp/client
+    ```
+  </Step>
+
+  <Step title="Set up your account">
+    <Tabs>
+      <Tab title="Using an ATXP account">
+        <a href="/client/create_an_account" target="_blank">Create an ATXP account</a> and set your account connection string in an environment variable. The best way to do this is to create a `.env` file in the root of your project and add the following line:
+
+        ```bash .env lines
+        ATXP_CONNECTION=https://accounts.atxp.ai?connection_token=<random_string>
+        ```
+      </Tab>
+
+      <Tab title="Using a Solana account">
+        If you already have a Solana wallet, you can use it by setting the Solana endpoint and your Solana private key in environment variables. The best way to do this is to create a `.env` file in the root of your project and add the following lines:
+
+        ```bash .env lines
+        SOLANA_ENDPOINT=<YOUR_SOLANA_ENDPOINT>
+        SOLANA_PRIVATE_KEY=<YOUR_SOLANA_PRIVATE_KEY>
+        ```
+      </Tab>
+
+      <Tab title="Using other accounts">
+        ATXP is broadly compatible with (Ethereum Virtual Machine) EVM chains and wallets. Please <a href="mailto:devrel@atxp.ai?subject=ATXP%20EVM%20Inquiry">contact us</a> for more information.
+      </Tab>
+    </Tabs>
+
+    <Warning>
+      Never commit your `.env` file to version control. It is a good idea to add your `.env` to your `.gitignore` file to prevent it from being committed.
+
+      ```bash
+      echo .env >> .gitignore
+      ```
+    </Warning>
+  </Step>
+
+  <Step title="Define the services that you want to use">
+    Define the services that you want to use in your client.
+
+    ```typescript
+    const browseService = {
+      mcpServer: 'https://browse.mcp.atxp.ai/',
+      toolName: 'atxp_browse',
+      description: 'browse',
+      getArguments: (prompt: string) => ({ query: prompt }),
+      getResult: (result: any) => result.content[0].text
+    };
+    ```
+  </Step>
+
+  <Step title="Create an ATXP client">
+    <Tabs>
+      <Tab title="Using an ATXP account">
+        Create a client using an ATXP account by importing the ATXP client SDK and other dependencies.
+
+        ```typescript
+        // Import the ATXP client SDK
+        import { atxpClient, ATXPAccount } from '@atxp/client';
+
+        // Read the ATXP account details from environment variables
+        const atxpConnectionString = process.env.ATXP_CONNECTION;
+
+        // Create a client using the `atxpClient` function
+        const client = await atxpClient({
+          mcpServer: browseService.mcpServer,
+          account: new ATXPAccount(atxpConnectionString),
+        });
+        ```
+      </Tab>
+
+      <Tab title="Using a Solana account">
+        Create a client using a Solana account by importing the ATXP client SDK and other dependencies.
+
+        ```typescript
+        // Import the ATXP client SDK
+        import { atxpClient, SolanaAccount } from '@atxp/client';
+
+        // Read the Solana account details from the environment variables
+        const solanaEndpoint = process.env.SOLANA_ENDPOINT;
+        const solanaPrivateKey = process.env.SOLANA_PRIVATE_KEY;
+
+        // Create a client using the `atxpClient` function
+        const client = await atxpClient({
+          mcpServer: browseService.mcpServer,
+          account: new SolanaAccount(solanaEndpoint, solanaPrivateKey),
+        });
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Use the services in your agent">
+    Use the services in your agent.
+
+    ```typescript
+    const prompt = "What are the top 3 articles by points on https://news.ycombinator.com?";
+
+    try {
+      const result = await client.callTool({
+          name: browseService.toolName,
+          arguments: browseService.getArguments(prompt),
+      });
+      console.log(`${browseService.description} result successful!`);
+      console.log('Result:', browseService.getResult(result));
+    } catch (error) {
+      console.error(`Error with ${browseService.description}:`, error);
+      process.exit(1);
+    }
+    ```
+  </Step>
+</Steps>
+
+## Resources
+
+<CardGroup cols={3}>
+  <Card title="Build an agent using paid MCP servers" icon="robot" href="/client/guides/tutorial">
+    Follow a complete tutorial to build your first ATXP‑powered agent.
+  </Card>
+
+  <Card title="Monetize your MCP server" icon="messages-dollar" href="/server/index">
+    Get started monetizing your MCP server with ATXP.
+  </Card>
+
+  <Card title="Join the community" icon="discord" href="https://discord.gg/atxp">
+    Join the ATXP community on Discord to ask questions, share your projects, and get help from the team.
+  </Card>
+</CardGroup>
