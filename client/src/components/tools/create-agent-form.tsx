@@ -55,10 +55,12 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
       return response.json();
     },
     onSuccess: (data) => {
-      onExecute(0.05);
+      // Use actual cost if available, fallback to 0.05
+      const actualCost = data.cost || 0.05;
+      onExecute(actualCost);
       toast({
         title: "Agent created successfully!",
-        description: `${data.name} is ready to use. Cost: $0.05`,
+        description: `${data.name} is ready to use. Cost: $${actualCost}`,
       });
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });

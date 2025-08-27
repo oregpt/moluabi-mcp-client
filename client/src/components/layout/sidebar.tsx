@@ -34,6 +34,7 @@ export default function Sidebar({
     { id: 'prompt_agent', label: 'Chat with Agent', icon: 'fas fa-comment-dots' },
     { id: 'upload_file_to_agent', label: 'Upload File', icon: 'fas fa-upload' },
     { id: 'get_usage_report', label: 'Usage Report', icon: 'fas fa-chart-bar' },
+    { id: 'refresh_pricing', label: 'Refresh Pricing', icon: 'fas fa-dollar-sign' },
   ];
 
   const handleNavClick = (toolId: string) => {
@@ -101,8 +102,8 @@ export default function Sidebar({
               <span className="text-sm font-semibold text-foreground">${totalSpent.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-border">
-              <span className="text-xs text-muted-foreground">Per Action</span>
-              <span className="text-xs font-medium text-accent">$0.05</span>
+              <span className="text-xs text-muted-foreground">Variable Pricing</span>
+              <span className="text-xs font-medium text-accent">Dynamic</span>
             </div>
             {atxpStatus?.balance !== undefined && (
               <div className="flex justify-between items-center">
@@ -162,8 +163,29 @@ export default function Sidebar({
           <div className="border-t border-border my-3"></div>
 
           {/* Interaction Tools */}
+          <div className="space-y-1 mb-3">
+            {navItems.slice(7, 10).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentTool === item.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                }`}
+                data-testid={`nav-${item.id}`}
+              >
+                <i className={`${item.icon} w-4`}></i>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-border my-3"></div>
+
+          {/* Pricing Tool */}
           <div className="space-y-1">
-            {navItems.slice(7).map((item) => (
+            {navItems.slice(10).map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}

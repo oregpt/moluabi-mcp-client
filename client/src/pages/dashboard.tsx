@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import CreateAgentForm from "@/components/tools/create-agent-form";
@@ -8,6 +9,7 @@ import DynamicToolForm from "@/components/tools/dynamic-tool-form";
 import LoadingOverlay from "@/components/ui/loading-overlay";
 import { useCostTracker } from "@/hooks/use-cost-tracker";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type ToolType = 
   | 'create_agent' 
@@ -19,7 +21,8 @@ type ToolType =
   | 'remove_user_from_agent' 
   | 'prompt_agent' 
   | 'upload_file_to_agent' 
-  | 'get_usage_report';
+  | 'get_usage_report'
+  | 'refresh_pricing';
 
 export default function Dashboard() {
   const [currentTool, setCurrentTool] = useState<ToolType>('create_agent');
@@ -30,56 +33,85 @@ export default function Dashboard() {
   const { totalSpent, sessionSpent, addCost } = useCostTracker();
   const { connected: wsConnected } = useWebSocket();
 
+  // Fetch current pricing from MCP server
+  const { data: pricingData, refetch: refetchPricing } = useQuery({
+    queryKey: ['/api/pricing'],
+    enabled: false, // Only fetch when manually triggered
+  });
+
+  // Default pricing (fallback)
+  const defaultPricing = {
+    create_agent: 0.05,
+    list_agents: 0.001,
+    get_agent: 0.001,
+    update_agent: 0.02,
+    delete_agent: 0.01,
+    add_user_to_agent: 0.005,
+    remove_user_from_agent: 0.005,
+    prompt_agent: 0.01,
+    upload_file_to_agent: 0.05,
+    get_usage_report: 0.002,
+    refresh_pricing: 0.001
+  };
+
+  // Use live pricing if available, otherwise use defaults
+  const currentPricing = pricingData?.pricing?.pricing || defaultPricing;
+
   const toolConfigs = {
     create_agent: {
       title: 'Create Agent',
       description: 'Build a new AI assistant with custom instructions',
-      cost: 0.05
+      cost: currentPricing.create_agent
     },
     list_agents: {
       title: 'List Agents',
       description: 'View and manage all accessible agents',
-      cost: 0.001
+      cost: currentPricing.list_agents
     },
     get_agent: {
       title: 'View Agent',
       description: 'Retrieve detailed information about an agent',
-      cost: 0.001
+      cost: currentPricing.get_agent
     },
     update_agent: {
       title: 'Update Agent',
       description: 'Modify agent settings and instructions',
-      cost: 0.02
+      cost: currentPricing.update_agent
     },
     delete_agent: {
       title: 'Delete Agent',
       description: 'Permanently remove an agent and its data',
-      cost: 0.01
+      cost: currentPricing.delete_agent
     },
     add_user_to_agent: {
       title: 'Add User Access',
       description: 'Grant a user access to an agent',
-      cost: 0.005
+      cost: currentPricing.add_user_to_agent
     },
     remove_user_from_agent: {
       title: 'Remove User Access',
       description: 'Revoke user access from an agent',
-      cost: 0.005
+      cost: currentPricing.remove_user_from_agent
     },
     prompt_agent: {
       title: 'Chat with Agent',
       description: 'Send messages and get AI-powered responses',
-      cost: 0.01
+      cost: currentPricing.prompt_agent
     },
     upload_file_to_agent: {
       title: 'Upload File',
       description: 'Add documents to an agent\'s knowledge base',
-      cost: 0.05
+      cost: currentPricing.upload_file_to_agent
     },
     get_usage_report: {
       title: 'Usage Report',
       description: 'View token consumption and cost analytics',
-      cost: 0.002
+      cost: currentPricing.get_usage_report
+    },
+    refresh_pricing: {
+      title: 'Refresh Pricing',
+      description: 'Get latest pricing information from MCP server',
+      cost: currentPricing.refresh_pricing
     }
   };
 
@@ -97,6 +129,21 @@ export default function Dashboard() {
 
   const handleToolExecution = async (cost: number) => {
     addCost(cost);
+  };
+
+  const handleRefreshPricing = async () => {
+    try {
+      showLoading("Fetching latest pricing from MCP server...");
+      const result = await refetchPricing();
+      if (result.data) {
+        // Add cost for the pricing call
+        addCost(result.data.cost || 0.001);
+      }
+      hideLoading();
+    } catch (error) {
+      console.error('Failed to refresh pricing:', error);
+      hideLoading();
+    }
   };
 
   const renderToolContent = () => {
@@ -124,6 +171,36 @@ export default function Dashboard() {
             showLoading={showLoading}
             hideLoading={hideLoading}
           />
+        );
+      case 'refresh_pricing':
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <button
+                onClick={handleRefreshPricing}
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+                data-testid="refresh-pricing-button"
+              >
+                Refresh Pricing ($0.001)
+              </button>
+              <p className="text-muted-foreground mt-2">
+                Get the latest pricing information from the MCP server
+              </p>
+            </div>
+            {pricingData && (
+              <div className="bg-card rounded-lg p-4 border">
+                <h3 className="text-lg font-medium mb-4">Current Pricing</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(currentPricing).map(([tool, cost]) => (
+                    <div key={tool} className="flex justify-between">
+                      <span className="text-muted-foreground">{tool.replace('_', ' ')}</span>
+                      <span className="font-medium">${cost}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         );
       default:
         return (

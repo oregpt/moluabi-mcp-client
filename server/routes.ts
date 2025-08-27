@@ -168,35 +168,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let mcpResponse;
       let status = "success";
       let errorMessage;
+      let actualCost = 0.05; // Default fallback
 
       try {
         mcpResponse = await mcpClient.callTool({
           name: toolName,
           arguments: req.body.arguments || {},
         });
+        
+        // Extract actual cost from MCP response if available
+        if (mcpResponse && typeof mcpResponse === 'object') {
+          if ('cost' in mcpResponse && typeof mcpResponse.cost === 'number') {
+            actualCost = mcpResponse.cost;
+          } else if ('content' in mcpResponse && Array.isArray(mcpResponse.content)) {
+            // Try to parse cost from response content
+            const responseText = mcpResponse.content.map(c => c.text || '').join(' ');
+            const costMatch = responseText.match(/"cost":\s*(\d+\.\d+)/);
+            if (costMatch) {
+              actualCost = parseFloat(costMatch[1]);
+            }
+          }
+        }
       } catch (error) {
         status = "error";
         errorMessage = error instanceof Error ? error.message : "MCP call failed";
         mcpResponse = null;
+        actualCost = 0;
       }
 
       const executionTime = Date.now() - startTime;
 
-      // Process payment
+      // Process payment with actual cost
       if (status === "success") {
         await atxpService.processPayment({
           userId,
           toolName,
-          cost: 0.05,
+          cost: actualCost,
         });
       }
 
-      // Record usage
+      // Record usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName,
         agentId: req.body.agentId,
-        cost: status === "success" ? "0.05" : "0.00",
+        cost: actualCost.toString(),
         executionTime,
         status,
         errorMessage,
@@ -211,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         response: mcpResponse,
-        cost: 0.05,
+        cost: actualCost,
         executionTime,
       });
     } catch (error) {
@@ -240,6 +256,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(summary);
     } catch (error) {
       console.error("Usage report error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get current pricing from MCP server
+  app.get("/api/pricing", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || "user_demo_123";
+      
+      // Validate payment for get_pricing tool
+      const paymentValid = await atxpService.validatePayment({
+        userId,
+        toolName: "get_pricing",
+        cost: 0.001,
+      });
+
+      if (!paymentValid) {
+        return res.status(402).json({ error: "Payment validation failed" });
+      }
+
+      // Call MCP get_pricing tool
+      const startTime = Date.now();
+      let mcpResponse;
+      let status = "success";
+      let errorMessage;
+
+      try {
+        mcpResponse = await mcpClient.callTool({
+          name: "get_pricing",
+          arguments: {},
+        });
+      } catch (error) {
+        status = "error";
+        errorMessage = error instanceof Error ? error.message : "MCP call failed";
+        mcpResponse = null;
+      }
+
+      const executionTime = Date.now() - startTime;
+
+      // Process payment if successful
+      if (status === "success") {
+        await atxpService.processPayment({
+          userId,
+          toolName: "get_pricing",
+          cost: 0.001,
+        });
+      }
+
+      // Record usage
+      await storage.recordToolUsage({
+        userId,
+        toolName: "get_pricing",
+        agentId: undefined,
+        cost: status === "success" ? "0.001" : "0.00",
+        executionTime,
+        status,
+        errorMessage,
+        request: {},
+        response: mcpResponse,
+      });
+
+      if (status === "error") {
+        return res.status(500).json({ error: errorMessage });
+      }
+
+      res.json({
+        success: true,
+        pricing: mcpResponse,
+        cost: 0.001,
+        executionTime,
+      });
+    } catch (error) {
+      console.error("Get pricing error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
     }
   });

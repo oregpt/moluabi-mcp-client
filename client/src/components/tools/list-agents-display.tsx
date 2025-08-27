@@ -14,25 +14,31 @@ interface ListAgentsDisplayProps {
 export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading }: ListAgentsDisplayProps) {
   const { toast } = useToast();
 
-  const { data: agents = [], isLoading, error, refetch } = useQuery<Agent[]>({
+  const { data: agentsResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/agents'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/agents?userId=user_demo_123");
       return response.json();
     },
   });
+  
+  // Extract agents and cost from response
+  const agents = Array.isArray(agentsResponse) ? agentsResponse : agentsResponse?.agents || [];
+  const lastCost = agentsResponse?.cost || 0.001;
 
   const refreshMutation = useMutation({
     mutationFn: async () => {
       showLoading("Refreshing agents list...");
-      await refetch();
-      return true;
+      const result = await refetch();
+      return result.data;
     },
-    onSuccess: () => {
-      onExecute(0.001);
+    onSuccess: (data) => {
+      const cost = data?.cost || lastCost || 0.001;
+      const agentsList = Array.isArray(data) ? data : data?.agents || [];
+      onExecute(cost);
       toast({
         title: "Agents list refreshed!",
-        description: `Found ${agents.length} agents. Cost: $0.001`,
+        description: `Found ${agentsList.length} agents. Cost: $${cost}`,
       });
       hideLoading();
     },
