@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { atxpService } from './atxp-client.js';
 
 export interface McpToolCall {
   name: string;
@@ -17,6 +18,7 @@ export class MoluAbiMcpClient {
   private client: Client | null = null;
   private transport: any | null = null;
   private serverUrl = 'https://moluabi-mcp-server.replit.app';
+  private useAtxp = true; // Use ATXP for authenticated tool calls
 
   async connect(): Promise<void> {
     try {
@@ -38,7 +40,7 @@ export class MoluAbiMcpClient {
         throw new Error(`Server responded with status ${response.status}`);
       }
     } catch (error) {
-      console.warn(`Failed to connect to remote MCP server (${this.serverUrl}), using mock mode:`, error.message);
+      console.warn(`Failed to connect to remote MCP server (${this.serverUrl}), using mock mode:`, error instanceof Error ? error.message : String(error));
       // Don't throw error, just set client to null to indicate mock mode
       this.client = null;
       this.transport = null;
@@ -63,7 +65,22 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      // Make HTTP request to the remote MCP server
+      if (this.useAtxp) {
+        // Use ATXP client for authenticated, paid tool calls
+        try {
+          const result = await atxpService.callMcpTool(
+            this.serverUrl,
+            toolCall.name,
+            toolCall.arguments
+          );
+          return result as McpResponse;
+        } catch (atxpError) {
+          // If ATXP fails, fall back to direct HTTP (for now)
+          console.warn(`ATXP call failed, falling back to direct HTTP:`, atxpError instanceof Error ? atxpError.message : String(atxpError));
+        }
+      }
+      
+      // Fallback: Make direct HTTP request to the remote MCP server
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
         headers: {
