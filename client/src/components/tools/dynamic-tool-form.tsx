@@ -254,10 +254,6 @@ export default function DynamicToolForm({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">{config.title}</h3>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <i className="fas fa-dollar-sign text-accent"></i>
-            <span>Cost: ${config.cost.toFixed(2)}</span>
-          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           {config.description}
@@ -288,7 +284,7 @@ export default function DynamicToolForm({
               data-testid={`button-execute-${toolName}`}
             >
               <i className={`fas fa-${toolName === 'delete_agent' ? 'trash' : 'play'} w-4`}></i>
-              <span>Execute Tool (${config.cost.toFixed(2)})</span>
+              <span>Execute Tool</span>
             </Button>
           </div>
         </form>

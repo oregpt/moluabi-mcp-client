@@ -101,10 +101,6 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Your Agents</h3>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <i className="fas fa-dollar-sign text-accent"></i>
-              <span>Cost: $0.001</span>
-            </div>
             <Button 
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
@@ -112,7 +108,7 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
               data-testid="button-refresh-agents"
             >
               <i className={`fas fa-sync-alt mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}></i>
-              Refresh List ($0.001)
+              Refresh List
             </Button>
           </div>
         </div>
@@ -167,7 +163,7 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {agents.map((agent) => (
+              {agents.map((agent: Agent) => (
                 <tr key={agent.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center">

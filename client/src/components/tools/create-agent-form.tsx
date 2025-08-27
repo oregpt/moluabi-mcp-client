@@ -86,10 +86,6 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Create New Agent</h3>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <i className="fas fa-dollar-sign text-accent"></i>
-            <span>Cost: $0.05</span>
-          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           Build a new AI assistant with custom instructions and capabilities.
@@ -249,7 +245,7 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
               data-testid="button-create-agent"
             >
               <i className="fas fa-plus w-4"></i>
-              <span>Create Agent ($0.05)</span>
+              <span>Create Agent</span>
             </Button>
           </div>
         </form>

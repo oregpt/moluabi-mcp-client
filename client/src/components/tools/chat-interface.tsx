@@ -156,10 +156,6 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Chat with Agent</h3>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <i className="fas fa-dollar-sign text-accent"></i>
-            <span>Per message: $0.05</span>
-          </div>
         </div>
         
         {/* Agent Selection */}
@@ -230,7 +226,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
             data-testid="button-send-message"
           >
             <i className="fas fa-paper-plane"></i>
-            <span>Send ($0.05)</span>
+            <span>Send</span>
           </Button>
         </div>
       </div>
