@@ -29,7 +29,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
     {
       id: 'welcome',
       type: 'system',
-      content: 'Select an agent above to start chatting. Each message costs $0.05.',
+      content: 'Select an agent above to start chatting. Each message costs $0.01.',
       timestamp: new Date(),
     }
   ]);
@@ -55,7 +55,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       return response.json();
     },
     onSuccess: (data, variables) => {
-      onExecute(0.05);
+      onExecute(0.01);
       
       // Add user message
       const userMessage: Message = {

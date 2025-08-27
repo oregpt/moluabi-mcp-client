@@ -16,8 +16,9 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   description: text("description"),
   instructions: text("instructions").notNull(),
-  type: text("type").notNull(), // file-based, team, hybrid
+  type: text("type").notNull(), // file-based, team, hybrid, chat-based
   isPublic: boolean("is_public").default(false).notNull(),
+  isShareable: boolean("is_shareable").default(false).notNull(),
   ownerId: varchar("owner_id").notNull().references(() => users.id),
   metadata: jsonb("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -69,6 +70,7 @@ export const insertAgentSchema = createInsertSchema(agents).pick({
   instructions: true,
   type: true,
   isPublic: true,
+  isShareable: true,
   ownerId: true,
   metadata: true,
 });

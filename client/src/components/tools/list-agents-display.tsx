@@ -29,10 +29,10 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
       return true;
     },
     onSuccess: () => {
-      onExecute(0.05);
+      onExecute(0.001);
       toast({
         title: "Agents list refreshed!",
-        description: `Found ${agents.length} agents. Cost: $0.05`,
+        description: `Found ${agents.length} agents. Cost: $0.001`,
       });
       hideLoading();
     },
@@ -97,7 +97,7 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <i className="fas fa-dollar-sign text-accent"></i>
-              <span>Cost: $0.05</span>
+              <span>Cost: $0.001</span>
             </div>
             <Button 
               onClick={handleRefresh}
@@ -106,7 +106,7 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
               data-testid="button-refresh-agents"
             >
               <i className={`fas fa-sync-alt mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}></i>
-              Refresh List ($0.05)
+              Refresh List ($0.001)
             </Button>
           </div>
         </div>

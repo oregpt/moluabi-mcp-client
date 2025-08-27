@@ -16,10 +16,11 @@ const createAgentSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
   description: z.string().optional(),
   instructions: z.string().min(1, "Instructions are required"),
-  type: z.enum(["file-based", "team", "hybrid"], {
+  type: z.enum(["file-based", "team", "hybrid", "chat-based"], {
     required_error: "Please select an agent type",
   }),
   isPublic: z.boolean().default(false),
+  isShareable: z.boolean().default(true),
 });
 
 type CreateAgentForm = z.infer<typeof createAgentSchema>;
@@ -41,6 +42,7 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
       instructions: "",
       type: undefined,
       isPublic: false,
+      isShareable: true,
     },
   });
 
@@ -126,6 +128,7 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="chat-based">Chat-based</SelectItem>
                       <SelectItem value="file-based">File-based</SelectItem>
                       <SelectItem value="team">Team</SelectItem>
                       <SelectItem value="hybrid">Hybrid</SelectItem>
@@ -178,26 +181,55 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="isPublic"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    data-testid="checkbox-is-public"
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    Make this agent publicly visible
-                  </FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="isPublic"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="checkbox-is-public"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Make this agent public
+                    </FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Public agents can be discovered and used by other users.
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isShareable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="checkbox-is-shareable"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Allow sharing
+                    </FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Shareable agents can be shared with specific users.
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-border">
             <Button 

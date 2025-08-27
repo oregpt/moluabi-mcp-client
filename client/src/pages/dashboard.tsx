@@ -39,37 +39,37 @@ export default function Dashboard() {
     list_agents: {
       title: 'List Agents',
       description: 'View and manage all accessible agents',
-      cost: 0.05
+      cost: 0.001
     },
     get_agent: {
       title: 'View Agent',
       description: 'Retrieve detailed information about an agent',
-      cost: 0.05
+      cost: 0.001
     },
     update_agent: {
       title: 'Update Agent',
       description: 'Modify agent settings and instructions',
-      cost: 0.05
+      cost: 0.02
     },
     delete_agent: {
       title: 'Delete Agent',
       description: 'Permanently remove an agent and its data',
-      cost: 0.05
+      cost: 0.01
     },
     add_user_to_agent: {
       title: 'Add User Access',
       description: 'Grant a user access to an agent',
-      cost: 0.05
+      cost: 0.005
     },
     remove_user_from_agent: {
       title: 'Remove User Access',
       description: 'Revoke user access from an agent',
-      cost: 0.05
+      cost: 0.005
     },
     prompt_agent: {
       title: 'Chat with Agent',
       description: 'Send messages and get AI-powered responses',
-      cost: 0.05
+      cost: 0.01
     },
     upload_file_to_agent: {
       title: 'Upload File',
@@ -79,7 +79,7 @@ export default function Dashboard() {
     get_usage_report: {
       title: 'Usage Report',
       description: 'View token consumption and cost analytics',
-      cost: 0.05
+      cost: 0.002
     }
   };
 
