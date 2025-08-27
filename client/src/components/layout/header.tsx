@@ -1,7 +1,7 @@
 interface HeaderProps {
   title: string;
   description: string;
-  cost: number;
+  cost: number | undefined;
   onMenuToggle: () => void;
 }
 
@@ -24,7 +24,7 @@ export default function Header({ title, description, cost, onMenuToggle }: Heade
         </div>
         <div className="flex items-center space-x-4">
           <div className="cost-badge px-3 py-1 rounded-full text-xs font-medium text-white">
-            Next Action: ${cost.toFixed(2)}
+            Next Action: ${(cost || 0).toFixed(2)}
           </div>
           <button className="p-2 hover:bg-secondary rounded-md" data-testid="notifications">
             <i className="fas fa-bell text-muted-foreground"></i>

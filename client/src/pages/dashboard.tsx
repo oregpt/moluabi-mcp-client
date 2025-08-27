@@ -46,57 +46,57 @@ export default function Dashboard() {
     create_agent: {
       title: 'Create Agent',
       description: 'Build a new AI assistant with custom instructions',
-      cost: currentPricing.create_agent
+      cost: currentPricing.create_agent || 0
     },
     list_agents: {
       title: 'List Agents',
       description: 'View and manage all accessible agents',
-      cost: currentPricing.list_agents
+      cost: currentPricing.list_agents || 0
     },
     get_agent: {
       title: 'View Agent',
       description: 'Retrieve detailed information about an agent',
-      cost: currentPricing.get_agent
+      cost: currentPricing.get_agent || 0
     },
     update_agent: {
       title: 'Update Agent',
       description: 'Modify agent settings and instructions',
-      cost: currentPricing.update_agent
+      cost: currentPricing.update_agent || 0
     },
     delete_agent: {
       title: 'Delete Agent',
       description: 'Permanently remove an agent and its data',
-      cost: currentPricing.delete_agent
+      cost: currentPricing.delete_agent || 0
     },
     add_user_to_agent: {
       title: 'Add User Access',
       description: 'Grant a user access to an agent',
-      cost: currentPricing.add_user_to_agent
+      cost: currentPricing.add_user_to_agent || 0
     },
     remove_user_from_agent: {
       title: 'Remove User Access',
       description: 'Revoke user access from an agent',
-      cost: currentPricing.remove_user_from_agent
+      cost: currentPricing.remove_user_from_agent || 0
     },
     prompt_agent: {
       title: 'Chat with Agent',
       description: 'Send messages and get AI-powered responses',
-      cost: currentPricing.prompt_agent
+      cost: currentPricing.prompt_agent || 0
     },
     upload_file_to_agent: {
       title: 'Upload File',
       description: 'Add documents to an agent\'s knowledge base',
-      cost: currentPricing.upload_file_to_agent
+      cost: currentPricing.upload_file_to_agent || 0
     },
     get_usage_report: {
       title: 'Usage Report',
       description: 'View token consumption and cost analytics',
-      cost: currentPricing.get_usage_report
+      cost: currentPricing.get_usage_report || 0
     },
     refresh_pricing: {
       title: 'Refresh Pricing',
       description: 'Get latest pricing information from MCP server',
-      cost: currentPricing.refresh_pricing
+      cost: currentPricing.refresh_pricing || 0
     }
   };
 
