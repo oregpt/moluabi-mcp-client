@@ -68,11 +68,6 @@ const getFieldsForTool = (toolName: string): FormField[] => {
         { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
-    case 'upload_file_to_agent':
-      return [
-        { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of the target agent', required: true },
-        { name: 'file', type: 'file', label: 'File', accept: '.pdf,.docx,.txt,.md', required: true },
-      ];
     
     case 'get_usage_report':
       return [

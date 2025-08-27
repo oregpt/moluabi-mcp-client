@@ -20,7 +20,7 @@ type ToolType =
   | 'add_user_to_agent' 
   | 'remove_user_from_agent' 
   | 'prompt_agent' 
-  | 'upload_file_to_agent' 
+ 
   | 'get_usage_report'
   | 'refresh_pricing';
 
@@ -83,11 +83,6 @@ export default function Dashboard() {
       title: 'Chat with Agent',
       description: 'Send messages and get AI-powered responses',
       cost: currentPricing.prompt_agent || 0
-    },
-    upload_file_to_agent: {
-      title: 'Upload File',
-      description: 'Add documents to an agent\'s knowledge base',
-      cost: currentPricing.upload_file_to_agent || 0
     },
     get_usage_report: {
       title: 'Usage Report',

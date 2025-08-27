@@ -32,7 +32,6 @@ export default function Sidebar({
     { id: 'add_user_to_agent', label: 'Add User Access', icon: 'fas fa-user-plus' },
     { id: 'remove_user_from_agent', label: 'Remove User Access', icon: 'fas fa-user-minus' },
     { id: 'prompt_agent', label: 'Chat with Agent', icon: 'fas fa-comment-dots' },
-    { id: 'upload_file_to_agent', label: 'Upload File', icon: 'fas fa-upload' },
     { id: 'get_usage_report', label: 'Usage Report', icon: 'fas fa-chart-bar' },
     { id: 'refresh_pricing', label: 'Refresh Pricing', icon: 'fas fa-dollar-sign' },
   ];
@@ -75,17 +74,17 @@ export default function Sidebar({
             <h3 className="text-sm font-medium text-foreground">ATXP Status</h3>
             <div className="flex items-center space-x-1">
               <div className={`w-2 h-2 rounded-full animate-pulse-slow ${
-                atxpStatus?.connected ? 'bg-accent' : 'bg-destructive'
+                (atxpStatus as any)?.connected ? 'bg-accent' : 'bg-destructive'
               }`}></div>
               <span className={`text-xs font-medium ${
-                atxpStatus?.connected ? 'text-accent' : 'text-destructive'
+                (atxpStatus as any)?.connected ? 'text-accent' : 'text-destructive'
               }`}>
-                {atxpStatus?.connected ? 'Connected' : 'Disconnected'}
+                {(atxpStatus as any)?.connected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {atxpStatus?.accountId || 'No account connected'}
+            {(atxpStatus as any)?.accountId || 'No account connected'}
           </div>
         </div>
 
@@ -105,10 +104,10 @@ export default function Sidebar({
               <span className="text-xs text-muted-foreground">Variable Pricing</span>
               <span className="text-xs font-medium text-accent">Dynamic</span>
             </div>
-            {atxpStatus?.balance !== undefined && (
+            {(atxpStatus as any)?.balance !== undefined && (
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">Balance</span>
-                <span className="text-xs font-medium text-primary">${atxpStatus.balance.toFixed(2)}</span>
+                <span className="text-xs font-medium text-primary">${(atxpStatus as any).balance.toFixed(2)}</span>
               </div>
             )}
           </div>
