@@ -108,8 +108,6 @@
  * - remove_user_from_agent: $0.005
  * - get_usage_report: $0.002
  * - get_pricing: $0.001
- * 
- * MCP Server URL: https://moluabi-mcp-server.replit.app
  */
 
 import { AgentService } from "./src/core/agent-service.ts";
