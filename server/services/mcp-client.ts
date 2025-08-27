@@ -60,8 +60,7 @@ export class MoluAbiMcpClient {
 
   async callTool(toolCall: McpToolCall): Promise<McpResponse> {
     if (!this.client) {
-      // Return mock responses when MCP server is not available
-      return this.getMockResponse(toolCall);
+      throw new Error('MCP server not connected');
     }
 
     try {
@@ -103,8 +102,8 @@ export class MoluAbiMcpClient {
       return result as McpResponse;
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
-      // Fall back to mock response if remote call fails
-      return this.getMockResponse(toolCall);
+      // No fallback - let it fail properly
+      throw error;
     }
   }
 

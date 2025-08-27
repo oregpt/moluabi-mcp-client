@@ -97,14 +97,24 @@ export class AtxpService {
 
   async validatePayment(payment: AtxpPayment): Promise<boolean> {
     if (!this.account) {
-      // In development/demo mode, always allow payments
-      console.log(`Mock payment validation: ${payment.toolName} - $${payment.cost}`);
-      return true;
+      console.log(`No ATXP account - payment validation failed for ${payment.toolName}`);
+      return false;
     }
 
     try {
-      // In a real implementation, this would check the account balance
-      // For now, we'll assume payments are valid if we have an account
+      // Check if we have a real connection token
+      const connectionString = this.account.getConnectionString();
+      const url = new URL(connectionString);
+      const token = url.searchParams.get('connection_token');
+      
+      if (!token) {
+        console.log(`No connection token - payment validation failed for ${payment.toolName}`);
+        return false;
+      }
+      
+      // For now, allow payments if we have a valid token
+      // In the future, this could check actual balance
+      console.log(`Payment validation passed for ${payment.toolName} - $${payment.cost}`);
       return true;
     } catch (error) {
       console.error("Payment validation failed:", error);
