@@ -276,21 +276,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(402).json({ error: "Payment validation failed" });
       }
 
-      // Call MCP get_pricing tool
+      // Get pricing directly from MCP server
       const startTime = Date.now();
-      let mcpResponse;
+      let pricingData;
       let status = "success";
       let errorMessage;
 
       try {
-        mcpResponse = await mcpClient.callTool({
-          name: "get_pricing",
-          arguments: {},
-        });
+        pricingData = await mcpClient.getPricing();
       } catch (error) {
         status = "error";
-        errorMessage = error instanceof Error ? error.message : "MCP call failed";
-        mcpResponse = null;
+        errorMessage = error instanceof Error ? error.message : "Pricing call failed";
+        pricingData = null;
       }
 
       const executionTime = Date.now() - startTime;
@@ -314,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status,
         errorMessage,
         request: {},
-        response: mcpResponse,
+        response: pricingData,
       });
 
       if (status === "error") {
@@ -323,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        pricing: mcpResponse,
+        pricing: pricingData,
         cost: 0, // Will be updated when real pricing is available
         executionTime,
       });

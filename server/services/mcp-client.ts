@@ -79,18 +79,15 @@ export class MoluAbiMcpClient {
         }
       }
       
-      // Fallback: Make direct HTTP request to the remote MCP server
+      // Use the new HTTP endpoint for MCP tool calls
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          method: 'tools/call',
-          params: {
-            name: toolCall.name,
-            arguments: toolCall.arguments
-          }
+          tool: toolCall.name,
+          arguments: toolCall.arguments
         })
       });
 
@@ -132,8 +129,8 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      // Make HTTP request to list available tools
-      const response = await fetch(`${this.serverUrl}/mcp/tools`, {
+      // Use the new HTTP endpoint to list available tools
+      const response = await fetch(`${this.serverUrl}/tools`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -148,6 +145,32 @@ export class MoluAbiMcpClient {
       return result.tools || [];
     } catch (error) {
       console.error("Failed to list MCP tools:", error);
+      throw error;
+    }
+  }
+
+  async getPricing(): Promise<any> {
+    if (!this.client) {
+      throw new Error("MCP client not connected");
+    }
+
+    try {
+      // Use the new HTTP endpoint to get pricing
+      const response = await fetch(`${this.serverUrl}/pricing`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get pricing: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Failed to get pricing from MCP server:", error);
       throw error;
     }
   }
