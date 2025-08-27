@@ -40,7 +40,8 @@ export default function Dashboard() {
   });
 
   // No default pricing - must come from real MCP server
-  const currentPricing = pricingData?.pricing?.pricing || {};
+  const pricingResponse = pricingData as any;
+  const currentPricing: Record<string, number> = pricingResponse?.pricing?.pricing || {};
 
   const toolConfigs = {
     create_agent: {
@@ -122,7 +123,8 @@ export default function Dashboard() {
       const result = await refetchPricing();
       if (result.data) {
         // Add cost for the pricing call
-        addCost(result.data.cost || 0.001);
+        const responseData = result.data as any;
+        addCost(responseData?.cost || 0);
       }
       hideLoading();
     } catch (error) {
@@ -172,19 +174,19 @@ export default function Dashboard() {
                 Get the latest pricing information from the MCP server
               </p>
             </div>
-            {pricingData && (
+            {pricingData && Object.keys(currentPricing).length > 0 ? (
               <div className="bg-card rounded-lg p-4 border">
                 <h3 className="text-lg font-medium mb-4">Current Pricing</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {Object.entries(currentPricing).map(([tool, cost]) => (
                     <div key={tool} className="flex justify-between">
                       <span className="text-muted-foreground">{tool.replace('_', ' ')}</span>
-                      <span className="font-medium">${cost}</span>
+                      <span className="font-medium">${typeof cost === 'number' ? cost.toFixed(2) : '0.00'}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         );
       default:
@@ -212,7 +214,7 @@ export default function Dashboard() {
 
       <Sidebar 
         currentTool={currentTool}
-        onToolChange={setCurrentTool}
+        onToolChange={(tool: string) => setCurrentTool(tool as ToolType)}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         totalSpent={totalSpent}
