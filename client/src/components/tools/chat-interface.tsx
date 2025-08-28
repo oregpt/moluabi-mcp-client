@@ -53,9 +53,10 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { agentId: string; message: string }) => {
       const response = await apiRequest("POST", `/api/mcp/tools/prompt_agent`, {
-        userId: "user_demo_123",
-        agentId: parseInt(messageData.agentId),
-        message: messageData.message,
+        arguments: {
+          agentId: parseInt(messageData.agentId),
+          message: messageData.message,
+        },
       });
       return response.json();
     },
