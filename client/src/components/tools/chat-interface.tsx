@@ -37,13 +37,18 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const { data: agents = [] } = useQuery<Agent[]>({
+  const { data: agentsResponse } = useQuery({
     queryKey: ['/api/agents'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/agents?userId=user_demo_123");
       return response.json();
     },
   });
+
+  // Extract agents from nested MCP response
+  // MCP returns: {success: true, agents: {success: true, agents: [...]}, cost: 0.001}
+  const mcpData = agentsResponse?.agents || agentsResponse;
+  const agents = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
 
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { agentId: string; message: string }) => {
