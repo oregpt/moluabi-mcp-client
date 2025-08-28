@@ -33,7 +33,7 @@ export default function Sidebar({
     { id: 'remove_user_from_agent', label: 'Unassign User From Agent', icon: 'fas fa-user-minus' },
     // { id: 'prompt_agent', label: 'Chat with Agent', icon: 'fas fa-comment-dots' }, // Temporarily hidden
     { id: 'get_usage_report', label: 'Usage Report', icon: 'fas fa-chart-bar' },
-    { id: 'refresh_pricing', label: 'Refresh Pricing', icon: 'fas fa-dollar-sign' },
+    { id: 'refresh_pricing', label: 'View Price List', icon: 'fas fa-dollar-sign' },
   ];
 
   const handleNavClick = (toolId: string) => {

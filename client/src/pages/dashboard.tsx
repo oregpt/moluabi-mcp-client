@@ -162,12 +162,12 @@ export default function Dashboard() {
               <button
                 onClick={handleRefreshPricing}
                 className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
-                data-testid="refresh-pricing-button"
+                data-testid="view-price-list-button"
               >
-                Refresh Pricing
+                View Price List
               </button>
               <p className="text-muted-foreground mt-2">
-                Get the latest pricing information from the MCP server
+                View current pricing for all available services
               </p>
             </div>
             {pricingData && pricingStructure ? (
