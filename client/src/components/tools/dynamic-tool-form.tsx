@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -108,6 +109,8 @@ export default function DynamicToolForm({
 }: DynamicToolFormProps) {
   const { toast } = useToast();
   const [result, setResult] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDeleteData, setPendingDeleteData] = useState<any>(null);
   const fields = getFieldsForTool(toolName);
   
   const form = useForm({
@@ -213,8 +216,27 @@ export default function DynamicToolForm({
   });
 
   const onSubmit = async (data: Record<string, any>) => {
+    // Show confirmation modal for delete operations
+    if (toolName === 'delete_agent') {
+      setPendingDeleteData(data);
+      setShowDeleteConfirm(true);
+      return;
+    }
+    
     showLoading(`Executing ${config.title.toLowerCase()}...`);
     toolMutation.mutate(data);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false);
+    showLoading(`Executing ${config.title.toLowerCase()}...`);
+    toolMutation.mutate(pendingDeleteData);
+    setPendingDeleteData(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setPendingDeleteData(null);
   };
 
   const renderField = (field: FormField) => {
@@ -447,6 +469,35 @@ export default function DynamicToolForm({
           </div>
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-destructive">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              Confirm Agent Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Agent ID #{pendingDeleteData?.agentId}?
+              <br /><br />
+              <strong>This action cannot be undone.</strong> The agent and all its data will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              <i className="fas fa-trash mr-2"></i>
+              Delete Agent
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
