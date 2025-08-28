@@ -69,13 +69,13 @@ const getFieldsForTool = (toolName: string): FormField[] => {
     case 'add_user_to_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of the target agent', required: true },
-        { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
+        { name: 'email', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
     case 'remove_user_from_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of the target agent', required: true },
-        { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
+        { name: 'email', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
     case 'prompt_agent':
@@ -124,6 +124,11 @@ export default function DynamicToolForm({
     mutationFn: async (data: Record<string, any>) => {
       const formData = { ...data, userId: "user_demo_123" };
       
+      // Debug user access operations
+      if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
+        console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
+      }
+      
       let endpoint: string;
       let method: string;
       
@@ -164,10 +169,7 @@ export default function DynamicToolForm({
       // Enhanced logging for debugging
       console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
       
-      // Debug user access operations
-      if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
-        console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
-      }
+      // Debug user access operations are now logged in the mutation function
       
       // Better toast with actual result info - use actual cost
       let description = `Operation successful. Cost: $${actualCost.toFixed(3)}`;
