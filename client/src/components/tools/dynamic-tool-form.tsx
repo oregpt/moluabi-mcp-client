@@ -124,9 +124,12 @@ export default function DynamicToolForm({
     mutationFn: async (data: Record<string, any>) => {
       const formData = { ...data, userId: "user_demo_123" };
       
-      // Debug user access operations
+      // Debug user access operations and usage report
       if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
         console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
+      }
+      if (toolName === 'get_usage_report') {
+        console.log(`📊 Debug Usage Report - Form data:`, JSON.stringify(formData, null, 2));
       }
       
       let endpoint: string;

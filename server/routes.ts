@@ -225,6 +225,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualCost = 0; // No fallback - must come from MCP response
 
       try {
+        // Debug usage report arguments
+        if (toolName === 'get_usage_report') {
+          console.log(`📊 Server Debug - Usage Report Arguments:`, JSON.stringify(req.body.arguments || {}, null, 2));
+        }
+        
         mcpResponse = await mcpClient.callTool({
           name: toolName,
           arguments: req.body.arguments || {},
