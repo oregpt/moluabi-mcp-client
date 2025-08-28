@@ -91,7 +91,7 @@ const getFieldsForTool = (toolName: string): FormField[] => {
     
     case 'get_usage_report':
       return [
-        { name: 'days', type: 'number', label: 'Days to Report', placeholder: '7', required: true },
+        { name: 'days', type: 'number', label: 'Last X Days', placeholder: '7', required: true },
       ];
     
     default:
