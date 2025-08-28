@@ -41,7 +41,8 @@ export default function Dashboard() {
 
   // No default pricing - must come from real MCP server
   const pricingResponse = pricingData as any;
-  const currentPricing: Record<string, number> = pricingResponse?.pricing?.pricing || {};
+  const pricingStructure = pricingResponse?.pricing?.pricing || {};
+  const currentPricing: Record<string, number> = pricingStructure?.operations || {};
 
   const toolConfigs = {
     create_agent: {
@@ -169,17 +170,46 @@ export default function Dashboard() {
                 Get the latest pricing information from the MCP server
               </p>
             </div>
-            {pricingData && Object.keys(currentPricing).length > 0 ? (
-              <div className="bg-card rounded-lg p-4 border">
-                <h3 className="text-lg font-medium mb-4">Current Pricing</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(currentPricing).map(([tool, cost]) => (
-                    <div key={tool} className="flex justify-between">
-                      <span className="text-muted-foreground">{tool.replace('_', ' ')}</span>
-                      <span className="font-medium">${typeof cost === 'number' ? cost.toFixed(2) : '0.00'}</span>
+            {pricingData && pricingStructure ? (
+              <div className="space-y-6">
+                {/* Models Pricing */}
+                {pricingStructure.models && Object.keys(pricingStructure.models).length > 0 && (
+                  <div className="bg-card rounded-lg p-4 border">
+                    <h3 className="text-lg font-medium mb-4">Models (per 1K tokens)</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      {Object.entries(pricingStructure.models).map(([model, costs]: [string, any]) => (
+                        <div key={model} className="bg-muted/50 rounded p-3">
+                          <div className="font-medium mb-2">{model}</div>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Input:</span>
+                              <span>${costs.inputCost?.toFixed(4) || '0.0000'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Output:</span>
+                              <span>${costs.outputCost?.toFixed(4) || '0.0000'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                
+                {/* Operations Pricing */}
+                {currentPricing && Object.keys(currentPricing).length > 0 && (
+                  <div className="bg-card rounded-lg p-4 border">
+                    <h3 className="text-lg font-medium mb-4">Operations</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(currentPricing).map(([operation, cost]) => (
+                        <div key={operation} className="flex justify-between">
+                          <span className="text-muted-foreground">{operation.replace(/_/g, ' ')}</span>
+                          <span className="font-medium">${typeof cost === 'number' ? cost.toFixed(3) : '0.000'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
