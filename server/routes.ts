@@ -230,7 +230,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? { agentId: req.body.agentId, userEmail: req.body.userEmail }
           : req.body.arguments || {};
         
-        // Debug logs removed - user access tools are now working
+        // Debug user access operations
+        if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
+          console.log(`🔧 SERVER DEBUG ${toolName}:`);
+          console.log(`  Request body:`, JSON.stringify(req.body, null, 2));
+          console.log(`  Tool arguments:`, JSON.stringify(toolArguments, null, 2));
+        }
           
         mcpResponse = await mcpClient.callTool({
           name: toolName,

@@ -91,15 +91,22 @@ export class MoluAbiMcpClient {
       }
       
       // Use the new HTTP endpoint for MCP tool calls with exact format from working examples
+      const payload = {
+        tool: toolCall.name,
+        arguments: authenticatedArguments
+      };
+      
+      // Debug user access operations
+      if (toolCall.name === 'add_user_to_agent' || toolCall.name === 'remove_user_from_agent') {
+        console.log(`🔧 MCP CLIENT SENDING:`, JSON.stringify(payload, null, 2));
+      }
+      
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tool: toolCall.name,
-          arguments: authenticatedArguments
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
