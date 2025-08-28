@@ -47,15 +47,7 @@ export const mcpToolUsage = pgTable("mcp_tool_usage", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const agentFiles = pgTable("agent_files", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  agentId: integer("agent_id").notNull().references(() => agents.id),
-  fileName: text("file_name").notNull(),
-  fileSize: integer("file_size").notNull(),
-  fileType: text("file_type").notNull(),
-  uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// File upload functionality removed - not supported by MCP server
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -99,4 +91,3 @@ export type InsertMcpToolUsage = z.infer<typeof insertMcpToolUsageSchema>;
 export type McpToolUsage = typeof mcpToolUsage.$inferSelect;
 
 export type AgentAccess = typeof agentAccess.$inferSelect;
-export type AgentFile = typeof agentFiles.$inferSelect;
