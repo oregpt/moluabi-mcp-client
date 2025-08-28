@@ -91,6 +91,7 @@ const getFieldsForTool = (toolName: string): FormField[] => {
     case 'get_usage_report':
       return [
         { name: 'days', type: 'number', label: 'Days to Report', placeholder: '7', required: true },
+        { name: 'organizationId', type: 'text', label: 'Organization ID (Optional)', placeholder: 'oregpt (leave empty for all)', required: false },
       ];
     
     default:
@@ -159,6 +160,11 @@ export default function DynamicToolForm({
       
       // Enhanced logging for debugging
       console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
+      
+      // Debug user access operations
+      if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
+        console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
+      }
       
       // Better toast with actual result info - use actual cost
       let description = `Operation successful. Cost: $${actualCost.toFixed(3)}`;

@@ -83,7 +83,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       
       setMessages(prev => [...prev.slice(0, -1), userMessage, agentMessage]);
       setMessage("");
-      hideLoading();
+      // No loading popup to hide
       
       toast({
         title: "Message sent successfully!",
@@ -91,7 +91,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       });
     },
     onError: (error) => {
-      hideLoading();
+      // No loading popup to hide
       toast({
         title: "Failed to send message",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -110,7 +110,7 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       return;
     }
 
-    showLoading("Sending message to agent...");
+    // Don't show loading popup since we have "Agent is thinking..." in chat
     
     // Add loading message
     setMessages(prev => [...prev, {
