@@ -64,13 +64,24 @@ export class MoluAbiMcpClient {
     }
 
     try {
+      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      if (!apiKey) {
+        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+      }
+
+      // Add API key to arguments for authentication
+      const authenticatedArguments = {
+        apiKey,
+        ...toolCall.arguments
+      };
+
       if (this.useAtxp) {
         // Use ATXP client for authenticated, paid tool calls
         try {
           const result = await atxpService.callMcpTool(
             this.serverUrl,
             toolCall.name,
-            toolCall.arguments
+            authenticatedArguments
           );
           return result as McpResponse;
         } catch (atxpError) {
@@ -79,7 +90,7 @@ export class MoluAbiMcpClient {
         }
       }
       
-      // Use the new HTTP endpoint for MCP tool calls
+      // Use the new HTTP endpoint for MCP tool calls with exact format from working examples
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
         headers: {
@@ -87,19 +98,19 @@ export class MoluAbiMcpClient {
         },
         body: JSON.stringify({
           tool: toolCall.name,
-          arguments: toolCall.arguments
+          arguments: authenticatedArguments
         })
       });
 
       if (!response.ok) {
-        throw new Error(`MCP server responded with status ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
       return result as McpResponse;
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
-      // No fallback - let it fail properly
       throw error;
     }
   }
@@ -129,11 +140,17 @@ export class MoluAbiMcpClient {
     }
 
     try {
+      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      if (!apiKey) {
+        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+      }
+
       // Use the new HTTP endpoint to list available tools
       const response = await fetch(`${this.serverUrl}/tools`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
         }
       });
 
@@ -155,12 +172,21 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      // Use the new HTTP endpoint to get pricing
-      const response = await fetch(`${this.serverUrl}/pricing`, {
-        method: 'GET',
+      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      if (!apiKey) {
+        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+      }
+
+      // Use get_pricing tool instead of /pricing endpoint to match working examples
+      const response = await fetch(`${this.serverUrl}/mcp/call`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          tool: 'get_pricing',
+          arguments: { apiKey }
+        })
       });
 
       if (!response.ok) {

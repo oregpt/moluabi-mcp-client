@@ -176,17 +176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           arguments: req.body.arguments || {},
         });
         
-        // Extract actual cost from MCP response if available
+        // Extract actual cost from MCP response - new format from working examples
         if (mcpResponse && typeof mcpResponse === 'object') {
           if ('cost' in mcpResponse && typeof mcpResponse.cost === 'number') {
             actualCost = mcpResponse.cost;
-          } else if ('content' in mcpResponse && Array.isArray(mcpResponse.content)) {
-            // Try to parse cost from response content
-            const responseText = mcpResponse.content.map(c => c.text || '').join(' ');
-            const costMatch = responseText.match(/"cost":\s*(\d+\.\d+)/);
-            if (costMatch) {
-              actualCost = parseFloat(costMatch[1]);
-            }
           }
         }
       } catch (error) {
@@ -224,12 +217,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: errorMessage });
       }
 
-      res.json({
-        success: true,
-        response: mcpResponse,
-        cost: actualCost,
-        executionTime,
-      });
+      // Return the response in the same format as the MCP server
+      if (mcpResponse && typeof mcpResponse === 'object' && 'success' in mcpResponse) {
+        // Pass through the complete MCP response with additional metadata
+        res.json({
+          ...mcpResponse,
+          executionTime,
+        });
+      } else {
+        // Fallback for unexpected response format
+        res.json({
+          success: true,
+          response: mcpResponse,
+          cost: actualCost,
+          executionTime,
+        });
+      }
     } catch (error) {
       console.error("MCP tool execution error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
