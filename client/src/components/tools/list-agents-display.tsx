@@ -149,6 +149,9 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
             <thead className="bg-muted">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -168,6 +171,11 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
             <tbody className="bg-card divide-y divide-border">
               {agents.map((agent: Agent) => (
                 <tr key={agent.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-mono font-medium text-primary">
+                      #{agent.id}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">

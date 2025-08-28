@@ -150,9 +150,33 @@ export default function DynamicToolForm({
     },
     onSuccess: (data) => {
       onExecute(config.cost);
+      
+      // Enhanced logging for debugging
+      console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
+      
+      // Better toast with actual result info
+      let description = `Operation successful. Cost: $${config.cost.toFixed(2)}`;
+      
+      // Add specific result details based on tool type
+      if (toolName === 'get_usage_report' && data?.report) {
+        const usage = data.report.usage || data.report;
+        description += ` | Requests: ${usage.totalRequests || 0}, Tokens: ${usage.totalTokens || 0}`;
+      } else if (toolName === 'get_agent' && data?.agent) {
+        const agent = data.agent.agent || data.agent;
+        description += ` | Agent: ${agent.name || 'Unknown'} (ID: ${agent.id || 'N/A'})`;
+      } else if (toolName === 'create_agent' && data?.agent) {
+        const agent = data.agent.agent || data.agent;
+        description += ` | Created Agent ID: ${agent.id || 'N/A'}`;
+      } else if (toolName === 'update_agent' && data?.agent) {
+        const agent = data.agent.agent || data.agent;
+        description += ` | Updated Agent: ${agent.name || 'Unknown'}`;
+      } else if (toolName === 'delete_agent' && data?.success) {
+        description += ` | Agent deleted successfully`;
+      }
+      
       toast({
         title: `${config.title} completed!`,
-        description: `Operation successful. Cost: $${config.cost.toFixed(2)}`,
+        description,
       });
       
       // Reset form for most operations
