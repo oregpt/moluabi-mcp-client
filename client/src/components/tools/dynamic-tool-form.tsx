@@ -106,6 +106,7 @@ export default function DynamicToolForm({
   hideLoading 
 }: DynamicToolFormProps) {
   const { toast } = useToast();
+  const [result, setResult] = useState<any>(null);
   const fields = getFieldsForTool(toolName);
   
   const form = useForm({
