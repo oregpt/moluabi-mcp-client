@@ -83,8 +83,10 @@ export default function Sidebar({
               </span>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {(atxpStatus as any)?.accountId || 'No account connected'}
+          <div className="text-xs text-muted-foreground truncate">
+            {(atxpStatus as any)?.accountId ? 
+              `${(atxpStatus as any).accountId.substring(0, 12)}...` : 
+              'No account connected'}
           </div>
         </div>
 
