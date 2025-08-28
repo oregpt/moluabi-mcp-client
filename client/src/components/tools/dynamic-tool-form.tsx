@@ -92,7 +92,6 @@ const getFieldsForTool = (toolName: string): FormField[] => {
     case 'get_usage_report':
       return [
         { name: 'days', type: 'number', label: 'Days to Report', placeholder: '7', required: true },
-        { name: 'organizationId', type: 'text', label: 'Organization Name (Optional)', placeholder: 'oregpt (leave empty for all)', required: false },
       ];
     
     default:
@@ -124,12 +123,9 @@ export default function DynamicToolForm({
     mutationFn: async (data: Record<string, any>) => {
       const formData = { ...data, userId: "user_demo_123" };
       
-      // Debug user access operations and usage report
+      // Debug user access operations
       if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
         console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
-      }
-      if (toolName === 'get_usage_report') {
-        console.log(`📊 Debug Usage Report - Form data:`, JSON.stringify(formData, null, 2));
       }
       
       let endpoint: string;
@@ -341,6 +337,20 @@ export default function DynamicToolForm({
           <div className="space-y-4">
             {fields.map(renderField)}
           </div>
+
+          {/* Static Organization Display for Usage Report */}
+          {toolName === 'get_usage_report' && (
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex items-center space-x-2">
+                <i className="fas fa-building text-muted-foreground"></i>
+                <span className="text-sm font-medium text-muted-foreground">Organization:</span>
+                <span className="text-sm font-semibold text-foreground">oregpt</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Usage data will be shown for your API key's organization
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-border">
             <Button 

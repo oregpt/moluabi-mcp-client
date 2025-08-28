@@ -206,11 +206,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
       
-      // Debug all usage report requests
-      if (toolName === 'get_usage_report') {
-        console.log(`📊 Usage Report Request - Full body:`, JSON.stringify(req.body, null, 2));
-      }
-      
       // Validate payment - no hardcoded cost
       const paymentValid = await atxpService.validatePayment({
         userId,
@@ -230,11 +225,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualCost = 0; // No fallback - must come from MCP response
 
       try {
-        // Debug usage report arguments
-        if (toolName === 'get_usage_report') {
-          console.log(`📊 Server Debug - Usage Report Arguments:`, JSON.stringify(req.body.arguments || {}, null, 2));
-        }
-        
         mcpResponse = await mcpClient.callTool({
           name: toolName,
           arguments: req.body.arguments || {},
