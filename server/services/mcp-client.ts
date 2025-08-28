@@ -96,7 +96,6 @@ export class MoluAbiMcpClient {
         arguments: authenticatedArguments
       };
       
-      // Debug logs removed - user access tools working correctly
       
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
