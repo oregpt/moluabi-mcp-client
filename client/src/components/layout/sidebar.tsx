@@ -100,7 +100,7 @@ export default function Sidebar({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground">All Time</span>
-              <span className="text-sm font-semibold text-foreground">${totalSpent.toFixed(2)}</span>
+              <span className="text-sm font-semibold text-foreground">${totalSpent.toFixed(3)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-border">
               <span className="text-xs text-muted-foreground">Variable Pricing</span>
