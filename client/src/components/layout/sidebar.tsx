@@ -31,7 +31,7 @@ export default function Sidebar({
     { id: 'delete_agent', label: 'Delete Agent', icon: 'fas fa-trash', destructive: true },
     { id: 'add_user_to_agent', label: 'Assign User to Agent', icon: 'fas fa-user-plus' },
     { id: 'remove_user_from_agent', label: 'Unassign User From Agent', icon: 'fas fa-user-minus' },
-    { id: 'prompt_agent', label: 'Chat with Agent', icon: 'fas fa-comment-dots' },
+    // { id: 'prompt_agent', label: 'Chat with Agent', icon: 'fas fa-comment-dots' }, // Temporarily hidden
     { id: 'get_usage_report', label: 'Usage Report', icon: 'fas fa-chart-bar' },
     { id: 'refresh_pricing', label: 'Refresh Pricing', icon: 'fas fa-dollar-sign' },
   ];
