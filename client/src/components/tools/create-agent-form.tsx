@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 const createAgentSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
   description: z.string().min(1, "Description is required"),
+  instructions: z.string().optional(),
   type: z.enum(["file-based", "conversation", "hybrid"], {
     required_error: "Please select an agent type",
   }),
@@ -36,6 +37,7 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
     defaultValues: {
       name: "",
       description: "",
+      instructions: "",
       type: undefined,
     },
   });
@@ -144,6 +146,29 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="instructions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Instructions</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Detailed instructions for how the agent should behave..."
+                    rows={4}
+                    className="resize-none"
+                    data-testid="textarea-agent-instructions"
+                    {...field}
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Optional: Provide specific instructions for your agent's behavior.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

@@ -57,6 +57,7 @@ const getFieldsForTool = (toolName: string): FormField[] => {
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of agent to update', required: true },
         { name: 'name', type: 'text', label: 'New Name', placeholder: 'Updated agent name' },
         { name: 'description', type: 'text', label: 'New Description', placeholder: 'Updated description' },
+        { name: 'instructions', type: 'textarea', label: 'New Instructions', placeholder: 'Updated instructions' },
       ];
     
     case 'delete_agent':
