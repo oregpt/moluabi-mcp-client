@@ -22,9 +22,11 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
     },
   });
   
-  // Extract agents and cost from response
-  const agents = Array.isArray(agentsResponse) ? agentsResponse : agentsResponse?.agents || [];
-  const lastCost = agentsResponse?.cost || 0.001;
+  // Extract agents and cost from nested MCP response
+  // MCP returns: {success: true, agents: {success: true, agents: [...]}, cost: 0.001}
+  const mcpData = agentsResponse?.agents || agentsResponse;
+  const agents = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
+  const lastCost = agentsResponse?.cost || mcpData?.cost || 0.001;
 
   const refreshMutation = useMutation({
     mutationFn: async () => {
@@ -34,7 +36,8 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
     },
     onSuccess: (data) => {
       const cost = data?.cost || lastCost || 0.001;
-      const agentsList = Array.isArray(data) ? data : data?.agents || [];
+      const mcpData = data?.agents || data;
+      const agentsList = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
       onExecute(cost);
       toast({
         title: "Agents list refreshed!",
