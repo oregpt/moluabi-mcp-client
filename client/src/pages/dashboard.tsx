@@ -75,7 +75,7 @@ export default function Dashboard() {
       cost: currentPricing.add_user_to_agent || 0
     },
     remove_user_from_agent: {
-      title: 'Remove User from Agent',
+      title: 'Unassign User From Agent',
       description: 'Revoke user access from an agent',
       cost: currentPricing.remove_user_from_agent || 0
     },
