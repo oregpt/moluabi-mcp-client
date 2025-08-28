@@ -36,6 +36,17 @@ interface DynamicToolFormProps {
 
 const getFieldsForTool = (toolName: string): FormField[] => {
   switch (toolName) {
+    case 'create_agent':
+      return [
+        { name: 'name', type: 'text', label: 'Agent Name', placeholder: 'My New Agent', required: true },
+        { name: 'description', type: 'text', label: 'Description', placeholder: 'Agent for customer support', required: true },
+        { name: 'type', type: 'select', label: 'Agent Type', required: true, options: [
+          { value: 'file-based', label: 'File-based' },
+          { value: 'conversation', label: 'Conversation' },
+          { value: 'hybrid', label: 'Hybrid' }
+        ]},
+      ];
+    
     case 'get_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'Enter agent ID', required: true },
@@ -46,14 +57,11 @@ const getFieldsForTool = (toolName: string): FormField[] => {
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of agent to update', required: true },
         { name: 'name', type: 'text', label: 'New Name', placeholder: 'Updated agent name' },
         { name: 'description', type: 'text', label: 'New Description', placeholder: 'Updated description' },
-        { name: 'instructions', type: 'textarea', label: 'New Instructions', placeholder: 'Updated instructions' },
-        { name: 'isPublic', type: 'checkbox', label: 'Make agent public' },
       ];
     
     case 'delete_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of agent to delete', required: true },
-        { name: 'confirm', type: 'checkbox', label: 'I confirm I want to delete this agent', required: true },
       ];
     
     case 'add_user_to_agent':
@@ -68,11 +76,20 @@ const getFieldsForTool = (toolName: string): FormField[] => {
         { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
+    case 'prompt_agent':
+      return [
+        { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of agent to chat with', required: true },
+        { name: 'message', type: 'textarea', label: 'Message', placeholder: 'Hello! How can you help me?', required: true },
+        { name: 'model', type: 'select', label: 'Model (Optional)', options: [
+          { value: 'gpt-5', label: 'GPT-5' },
+          { value: 'claude', label: 'Claude' },
+          { value: 'grok', label: 'Grok' }
+        ]},
+      ];
     
     case 'get_usage_report':
       return [
-        { name: 'startDate', type: 'date', label: 'Start Date', required: true },
-        { name: 'endDate', type: 'date', label: 'End Date', required: true },
+        { name: 'days', type: 'number', label: 'Days to Report', placeholder: '7', required: true },
       ];
     
     default:
@@ -118,8 +135,8 @@ export default function DynamicToolForm({
           method = "DELETE";
           break;
         case 'get_usage_report':
-          endpoint = `/api/usage?userId=user_demo_123&startDate=${data.startDate}&endDate=${data.endDate}`;
-          method = "GET";
+          endpoint = `/api/mcp/tools/${toolName}`;
+          method = "POST";
           break;
         default:
           endpoint = `/api/mcp/tools/${toolName}`;
