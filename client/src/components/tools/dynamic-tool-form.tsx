@@ -125,7 +125,7 @@ export default function DynamicToolForm({
       
       // Debug user access operations
       if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
-        console.log(`🔧 Debug ${toolName} - Request sent:`, JSON.stringify(formData, null, 2));
+        console.log(`🔧 Debug ${toolName} - Form data sent:`, JSON.stringify(formData, null, 2));
       }
       
       let endpoint: string;

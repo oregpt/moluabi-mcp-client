@@ -225,6 +225,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualCost = 0; // No fallback - must come from MCP response
 
       try {
+        // Debug user access operations
+        if (toolName === 'add_user_to_agent' || toolName === 'remove_user_from_agent') {
+          console.log(`🔧 Server Debug ${toolName}:`);
+          console.log(`  - Full request body:`, JSON.stringify(req.body, null, 2));
+          console.log(`  - Arguments to MCP:`, JSON.stringify(req.body.arguments || {}, null, 2));
+        }
+        
         mcpResponse = await mcpClient.callTool({
           name: toolName,
           arguments: req.body.arguments || {},
