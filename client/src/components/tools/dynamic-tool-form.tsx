@@ -335,19 +335,7 @@ export default function DynamicToolForm({
             {fields.map(renderField)}
           </div>
 
-          {/* Static Organization Display for Usage Report */}
-          {toolName === 'get_usage_report' && (
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center space-x-2">
-                <i className="fas fa-building text-muted-foreground"></i>
-                <span className="text-sm font-medium text-muted-foreground">Organization:</span>
-                <span className="text-sm font-semibold text-foreground">oregpt</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Usage data will be shown for your API key's organization
-              </p>
-            </div>
-          )}
+          {/* Organization info will be shown in results after execution */}
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-border">
             <Button 
@@ -477,7 +465,7 @@ export default function DynamicToolForm({
           )}
           
           <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-            Operation Cost: ${result.cost || 0} | Organization: {result.organizationId || 'N/A'}
+            Operation Cost: ${result.cost || 0} | Organization: {result.organizationId === 'org-1756358727237' ? 'ATXP Playground' : result.organizationId || 'N/A'}
           </div>
         </div>
       )}
