@@ -96,7 +96,7 @@ export default function Sidebar({
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground">Session Total</span>
-              <span className="text-sm font-semibold text-foreground">${sessionSpent.toFixed(2)}</span>
+              <span className="text-sm font-semibold text-foreground">${sessionSpent.toFixed(3)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground">All Time</span>
