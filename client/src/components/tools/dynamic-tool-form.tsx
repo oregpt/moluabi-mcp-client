@@ -69,13 +69,13 @@ const getFieldsForTool = (toolName: string): FormField[] => {
     case 'add_user_to_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of the target agent', required: true },
-        { name: 'email', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
+        { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
     case 'remove_user_from_agent':
       return [
         { name: 'agentId', type: 'number', label: 'Agent ID', placeholder: 'ID of the target agent', required: true },
-        { name: 'email', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
+        { name: 'userEmail', type: 'email', label: 'User Email', placeholder: 'user@example.com', required: true },
       ];
     
     case 'prompt_agent':
