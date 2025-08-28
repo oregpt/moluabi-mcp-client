@@ -151,6 +151,9 @@ export default function DynamicToolForm({
     onSuccess: (data) => {
       onExecute(config.cost);
       
+      // Store result for display in UI
+      setResult(data);
+      
       // Enhanced logging for debugging
       console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
       
@@ -326,6 +329,115 @@ export default function DynamicToolForm({
           </div>
         </form>
       </Form>
+      
+      {/* Results Display for View Agent and Usage Report */}
+      {result && (toolName === 'get_agent' || toolName === 'get_usage_report') && (
+        <div className="mt-6 bg-card rounded-lg border border-border p-6 shadow-sm">
+          <h4 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+            <i className="fas fa-chart-line mr-2"></i>
+            {toolName === 'get_agent' ? 'Agent Details' : 'Usage Report'}
+          </h4>
+          
+          {toolName === 'get_agent' && result?.agent?.agent && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Agent ID</p>
+                  <p className="text-lg font-mono text-primary">#{result.agent.agent.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Name</p>
+                  <p className="text-lg text-foreground">{result.agent.agent.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Type</p>
+                  <p className="text-lg text-foreground">{result.agent.agent.type}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-lg text-green-600">
+                    {result.agent.agent.isPublic ? 'Public' : 'Private'}
+                  </p>
+                </div>
+              </div>
+              
+              {result.agent.agent.description && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Description</p>
+                  <p className="text-foreground">{result.agent.agent.description}</p>
+                </div>
+              )}
+              
+              {result.agent.agent.instructions && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Instructions</p>
+                  <div className="mt-2 p-3 bg-muted rounded-md">
+                    <pre className="text-sm text-foreground whitespace-pre-wrap">{result.agent.agent.instructions}</pre>
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Created</p>
+                  <p className="text-sm text-foreground">
+                    {new Date(result.agent.agent.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                  <p className="text-sm text-foreground">
+                    {new Date(result.agent.agent.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {toolName === 'get_usage_report' && result?.report?.usage && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {result.report.usage.totalRequests || 0}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Requests</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">
+                    {result.report.usage.totalTokens || 0}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Tokens</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-600">
+                    ${result.report.usage.totalCost || 0}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Cost</p>
+                </div>
+              </div>
+              
+              {result.report.usage.breakdown && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Usage Breakdown</p>
+                  <div className="space-y-2">
+                    {Object.entries(result.report.usage.breakdown).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-center p-2 bg-muted rounded">
+                        <span className="text-sm text-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                        <span className="text-sm font-medium text-primary">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
+            Operation Cost: ${result.cost || 0} | Organization: {result.organizationId || 'N/A'}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
