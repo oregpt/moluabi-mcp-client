@@ -206,6 +206,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
       
+      // Debug all usage report requests
+      if (toolName === 'get_usage_report') {
+        console.log(`📊 Usage Report Request - Full body:`, JSON.stringify(req.body, null, 2));
+      }
+      
       // Validate payment - no hardcoded cost
       const paymentValid = await atxpService.validatePayment({
         userId,
