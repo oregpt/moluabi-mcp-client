@@ -73,12 +73,12 @@ export default function Dashboard() {
     add_user_to_agent: {
       title: 'Assign User to Agent',
       description: 'Grant a user access to an agent',
-      cost: currentPricing.add_user_to_agent || 0
+      cost: currentPricing.add_user_to_agent || 0.005
     },
     remove_user_from_agent: {
       title: 'Unassign User From Agent',
       description: 'Revoke user access from an agent',
-      cost: currentPricing.remove_user_from_agent || 0
+      cost: currentPricing.remove_user_from_agent || 0.005
     },
     prompt_agent: {
       title: 'Chat with Agent',
@@ -88,12 +88,12 @@ export default function Dashboard() {
     get_usage_report: {
       title: 'Usage Report',
       description: 'View token consumption and cost analytics',
-      cost: currentPricing.get_usage_report || 0
+      cost: currentPricing.get_usage_report || 0.002
     },
     refresh_pricing: {
       title: 'Refresh Pricing',
       description: 'Get latest pricing information from MCP server',
-      cost: currentPricing.refresh_pricing || 0
+      cost: currentPricing.get_pricing || 0.001
     }
   };
 

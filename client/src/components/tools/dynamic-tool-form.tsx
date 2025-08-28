@@ -156,7 +156,7 @@ export default function DynamicToolForm({
     },
     onSuccess: (data) => {
       // Use actual cost from MCP response if available, fallback to config cost
-      const actualCost = data?.cost || config.cost;
+      const actualCost = data?.cost || config.cost || 0;
       onExecute(actualCost);
       
       // Store result for display in UI
@@ -455,7 +455,7 @@ export default function DynamicToolForm({
                     {Object.entries(result.report.usage.breakdown).map(([key, value]) => (
                       <div key={key} className="flex justify-between items-center p-2 bg-muted rounded">
                         <span className="text-sm text-foreground capitalize">{key.replace(/_/g, ' ')}</span>
-                        <span className="text-sm font-medium text-primary">{value}</span>
+                        <span className="text-sm font-medium text-primary">{String(value)}</span>
                       </div>
                     ))}
                   </div>

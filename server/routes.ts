@@ -328,11 +328,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
-      // Validate payment for get_pricing tool - no hardcoded cost
+      // Validate payment for get_pricing tool - use expected cost
       const paymentValid = await atxpService.validatePayment({
         userId,
         toolName: "get_pricing",
-        cost: 0, // Will be updated when real pricing is available
+        cost: 0.001, // Standard get_pricing cost from MCP response
       });
 
       if (!paymentValid) {
@@ -355,21 +355,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const executionTime = Date.now() - startTime;
 
-      // Process payment if successful - no hardcoded cost
+      // Process payment if successful - use actual or expected cost
       if (status === "success") {
+        const actualCost = pricingData?.cost || 0.001;
         await atxpService.processPayment({
           userId,
           toolName: "get_pricing",
-          cost: 0, // Will be updated when real pricing is available
+          cost: actualCost,
         });
       }
 
-      // Record usage - no hardcoded cost
+      // Record usage - use actual or expected cost
+      const actualCost = pricingData?.cost || 0.001;
       await storage.recordToolUsage({
         userId,
         toolName: "get_pricing",
         agentId: undefined,
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         executionTime,
         status,
         errorMessage,
@@ -384,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         pricing: pricingData,
-        cost: 0, // Will be updated when real pricing is available
+        cost: actualCost, // Use actual cost from MCP response
         executionTime,
       });
     } catch (error) {

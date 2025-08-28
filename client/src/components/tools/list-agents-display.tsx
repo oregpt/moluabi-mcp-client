@@ -18,7 +18,13 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
     queryKey: ['/api/agents'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/agents?userId=user_demo_123");
-      return response.json();
+      const result = await response.json();
+      
+      // Track cost for initial load and any subsequent fetches
+      const cost = result?.cost || 0.001;
+      onExecute(cost);
+      
+      return result;
     },
   });
   
