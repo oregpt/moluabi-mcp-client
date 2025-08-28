@@ -150,7 +150,9 @@ export default function DynamicToolForm({
       return response.json();
     },
     onSuccess: (data) => {
-      onExecute(config.cost);
+      // Use actual cost from MCP response if available, fallback to config cost
+      const actualCost = data?.cost || config.cost;
+      onExecute(actualCost);
       
       // Store result for display in UI
       setResult(data);
@@ -158,8 +160,8 @@ export default function DynamicToolForm({
       // Enhanced logging for debugging
       console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
       
-      // Better toast with actual result info
-      let description = `Operation successful. Cost: $${config.cost.toFixed(2)}`;
+      // Better toast with actual result info - use actual cost
+      let description = `Operation successful. Cost: $${actualCost.toFixed(3)}`;
       
       // Add specific result details based on tool type
       if (toolName === 'get_usage_report' && data?.report) {
