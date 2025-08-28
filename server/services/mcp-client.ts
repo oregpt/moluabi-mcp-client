@@ -96,10 +96,7 @@ export class MoluAbiMcpClient {
         arguments: authenticatedArguments
       };
       
-      // Debug user access operations
-      if (toolCall.name === 'add_user_to_agent' || toolCall.name === 'remove_user_from_agent') {
-        console.log(`🔧 MCP CLIENT SENDING:`, JSON.stringify(payload, null, 2));
-      }
+      // Debug logs removed - user access tools working correctly
       
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
