@@ -70,12 +70,12 @@ export default function Dashboard() {
       cost: currentPricing.delete_agent || 0
     },
     add_user_to_agent: {
-      title: 'Add User Access',
+      title: 'Assign User to Agent',
       description: 'Grant a user access to an agent',
       cost: currentPricing.add_user_to_agent || 0
     },
     remove_user_from_agent: {
-      title: 'Remove User Access',
+      title: 'Remove User from Agent',
       description: 'Revoke user access from an agent',
       cost: currentPricing.remove_user_from_agent || 0
     },
