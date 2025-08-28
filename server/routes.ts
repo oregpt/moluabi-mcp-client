@@ -15,25 +15,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to initialize services:", error);
   }
 
-  // Agent management routes
+  // Agent management routes - use MCP server
   app.post("/api/agents", async (req, res) => {
     try {
-      const userId = req.body.userId || "user_demo_123"; // In production, get from auth
-      const agentData = insertAgentSchema.parse({ ...req.body, ownerId: userId });
+      const userId = req.body.userId || "user_demo_123";
       
-      const agent = await storage.createAgent(agentData);
+      // Call MCP server to create agent
+      const mcpResponse = await mcpClient.callTool({
+        name: "create_agent",
+        arguments: {
+          name: req.body.name,
+          description: req.body.description,
+          type: req.body.type,
+          instructions: req.body.instructions
+        }
+      });
       
-      // Record tool usage - no hardcoded cost
+      // Extract cost and agent data from MCP response
+      let actualCost = 0;
+      let agentData = null;
+      
+      if (mcpResponse && typeof mcpResponse === 'object') {
+        if ('cost' in mcpResponse) actualCost = mcpResponse.cost || 0;
+        if ('agent' in mcpResponse) agentData = mcpResponse.agent;
+      }
+      
+      // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "create_agent",
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         status: "success",
         request: req.body,
-        response: { agent },
+        response: mcpResponse,
       });
 
-      res.status(201).json(agent);
+      res.status(201).json(mcpResponse);
     } catch (error) {
       console.error("Create agent error:", error);
       res.status(400).json({ error: error instanceof Error ? error.message : "Unknown error" });
@@ -43,19 +60,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/agents", async (req, res) => {
     try {
       const userId = req.query.userId as string || "user_demo_123";
-      const agents = await storage.getUserAgents(userId);
       
-      // Record tool usage - no hardcoded cost
+      // Call MCP server to list agents
+      const mcpResponse = await mcpClient.callTool({
+        name: "list_agents",
+        arguments: {}
+      });
+      
+      // Extract cost from MCP response
+      let actualCost = 0;
+      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
+        actualCost = mcpResponse.cost || 0;
+      }
+      
+      // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "list_agents",
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         status: "success",
         request: { userId },
-        response: { agents: agents.length },
+        response: mcpResponse,
       });
 
-      res.json(agents);
+      res.json(mcpResponse);
     } catch (error) {
       console.error("List agents error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
@@ -67,23 +95,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      const agent = await storage.getAgent(agentId, userId);
-      if (!agent) {
-        return res.status(404).json({ error: "Agent not found or access denied" });
+      // Call MCP server to get agent
+      const mcpResponse = await mcpClient.callTool({
+        name: "get_agent",
+        arguments: { agentId }
+      });
+      
+      // Extract cost from MCP response
+      let actualCost = 0;
+      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
+        actualCost = mcpResponse.cost || 0;
       }
 
-      // Record tool usage - no hardcoded cost
+      // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "get_agent",
         agentId,
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         status: "success",
         request: { agentId, userId },
-        response: { agent: agent.id },
+        response: mcpResponse,
       });
 
-      res.json(agent);
+      res.json(mcpResponse);
     } catch (error) {
       console.error("Get agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
@@ -95,23 +130,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.body.userId || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      const updatedAgent = await storage.updateAgent(agentId, userId, req.body);
-      if (!updatedAgent) {
-        return res.status(404).json({ error: "Agent not found or access denied" });
+      // Call MCP server to update agent
+      const mcpResponse = await mcpClient.callTool({
+        name: "update_agent",
+        arguments: {
+          agentId,
+          name: req.body.name,
+          description: req.body.description,
+          instructions: req.body.instructions
+        }
+      });
+      
+      // Extract cost from MCP response
+      let actualCost = 0;
+      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
+        actualCost = mcpResponse.cost || 0;
       }
 
-      // Record tool usage - no hardcoded cost
+      // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "update_agent",
         agentId,
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         status: "success",
         request: { agentId, updates: req.body },
-        response: { agent: updatedAgent.id },
+        response: mcpResponse,
       });
 
-      res.json(updatedAgent);
+      res.json(mcpResponse);
     } catch (error) {
       console.error("Update agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
@@ -123,23 +170,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      const success = await storage.deleteAgent(agentId, userId);
-      if (!success) {
-        return res.status(404).json({ error: "Agent not found or access denied" });
+      // Call MCP server to delete agent
+      const mcpResponse = await mcpClient.callTool({
+        name: "delete_agent",
+        arguments: { agentId }
+      });
+      
+      // Extract cost from MCP response
+      let actualCost = 0;
+      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
+        actualCost = mcpResponse.cost || 0;
       }
 
-      // Record tool usage - no hardcoded cost
+      // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "delete_agent",
         agentId,
-        cost: "0.00", // Will be updated when real pricing is available
+        cost: actualCost.toString(),
         status: "success",
         request: { agentId, userId },
-        response: { deleted: true },
+        response: mcpResponse,
       });
 
-      res.json({ success: true });
+      res.json(mcpResponse);
     } catch (error) {
       console.error("Delete agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
