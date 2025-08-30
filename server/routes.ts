@@ -83,7 +83,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response: mcpResponse,
       });
 
-      res.json(mcpResponse);
+      // Include ATXP flow data in response
+      res.json({
+        ...mcpResponse,
+        atxpFlow: {
+          steps: [
+            {
+              id: 'list-agents-success',
+              label: 'List agents completed',
+              status: 'success',
+              timestamp: new Date().toISOString(),
+              details: `Retrieved agent list with cost $${actualCost.toFixed(3)}`,
+              cost: actualCost
+            }
+          ],
+          totalSteps: 1,
+          totalCost: actualCost,
+          operation: 'list_agents'
+        }
+      });
     } catch (error) {
       console.error("List agents error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
