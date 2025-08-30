@@ -122,6 +122,17 @@ export default function Dashboard() {
         // Add cost for the pricing call
         const responseData = result.data as any;
         addCost(responseData?.cost || 0);
+        
+        // Handle ATXP flow data from pricing response
+        if (responseData?.atxpFlow) {
+          console.log('📋 Found ATXP flow data in pricing response:', responseData.atxpFlow);
+          setTimeout(() => {
+            if ((window as any).updateAtxpFlow) {
+              console.log('📋 Calling updateAtxpFlow from pricing');
+              (window as any).updateAtxpFlow(responseData.atxpFlow);
+            }
+          }, 500);
+        }
       }
       hideLoading();
     } catch (error) {
