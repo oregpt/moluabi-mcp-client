@@ -118,7 +118,7 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
   const recentSteps = steps.slice(-10); // Show last 10 steps
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border transition-all duration-300 ease-in-out ${
+    <div className={`fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border transition-all duration-300 ease-in-out ${
       isExpanded ? 'h-80' : 'h-12'
     }`}>
       {/* Header Bar - Always Visible */}
@@ -143,6 +143,12 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
           {!currentOperation && steps.length > 0 && (
             <span className="text-xs text-muted-foreground">
               {steps.length} operation{steps.length !== 1 ? 's' : ''} logged
+            </span>
+          )}
+          
+          {!currentOperation && steps.length === 0 && (
+            <span className="text-xs text-muted-foreground">
+              Execute a tool to see ATXP protocol steps
             </span>
           )}
         </div>

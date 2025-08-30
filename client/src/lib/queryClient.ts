@@ -54,18 +54,23 @@ export const queryClient = new QueryClient({
       retry: false,
       onSuccess: (data: any) => {
         // Check for ATXP flow data in mutation responses
+        console.log('🔍 Mutation success, checking for ATXP flow data:', data);
         if (data && data.atxpFlow && data.atxpFlow.steps) {
           console.log('📋 Found ATXP flow data in mutation response:', data.atxpFlow);
           
-          // Trigger ATXP flow monitor update
-          if ((window as any).updateAtxpFlow) {
-            (window as any).updateAtxpFlow(data.atxpFlow);
-          }
-          
-          // Also dispatch custom event
-          window.dispatchEvent(new CustomEvent('atxp-flow-update', { 
-            detail: data.atxpFlow 
-          }));
+          // Wait a bit for any loading overlays to disappear
+          setTimeout(() => {
+            // Trigger ATXP flow monitor update
+            if ((window as any).updateAtxpFlow) {
+              console.log('📋 Calling updateAtxpFlow with:', data.atxpFlow);
+              (window as any).updateAtxpFlow(data.atxpFlow);
+            }
+            
+            // Also dispatch custom event
+            window.dispatchEvent(new CustomEvent('atxp-flow-update', { 
+              detail: data.atxpFlow 
+            }));
+          }, 500);
         }
       }
     },
