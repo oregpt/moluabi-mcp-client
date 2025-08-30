@@ -85,6 +85,21 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       setMessage("");
       // No loading popup to hide
       
+      // Handle ATXP flow data from chat response
+      if (data && data.atxpFlow && data.atxpFlow.steps) {
+        console.log('📋 Found ATXP flow data in chat response:', data.atxpFlow);
+        
+        // Trigger ATXP flow monitor update
+        if ((window as any).updateAtxpFlow) {
+          (window as any).updateAtxpFlow(data.atxpFlow);
+        }
+        
+        // Also dispatch custom event
+        window.dispatchEvent(new CustomEvent('atxp-flow-update', { 
+          detail: data.atxpFlow 
+        }));
+      }
+      
       toast({
         title: "Message sent successfully!",
         description: `Cost: $${data.cost.toFixed(2)}${data.tokensUsed ? ` • ${data.tokensUsed} tokens` : ''}`,

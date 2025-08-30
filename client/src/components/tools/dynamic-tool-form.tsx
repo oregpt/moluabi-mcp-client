@@ -165,6 +165,21 @@ export default function DynamicToolForm({
       // Enhanced logging for debugging
       console.log(`✅ ${config.title} Result:`, JSON.stringify(data, null, 2));
       
+      // Handle ATXP flow data from API response
+      if (data && data.atxpFlow && data.atxpFlow.steps) {
+        console.log('📋 Found ATXP flow data in tool response:', data.atxpFlow);
+        
+        // Trigger ATXP flow monitor update
+        if ((window as any).updateAtxpFlow) {
+          (window as any).updateAtxpFlow(data.atxpFlow);
+        }
+        
+        // Also dispatch custom event
+        window.dispatchEvent(new CustomEvent('atxp-flow-update', { 
+          detail: data.atxpFlow 
+        }));
+      }
+      
       // Debug user access operations are now logged in the mutation function
       
       // Better toast with actual result info - use actual cost
