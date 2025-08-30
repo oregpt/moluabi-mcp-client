@@ -597,6 +597,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
+      // Clear previous flow steps
+      (global as any).currentAtxpSteps = [];
+      
       // Validate payment for get_pricing tool - use expected cost
       const paymentValid = await atxpService.validatePayment({
         userId,
@@ -652,11 +655,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: errorMessage });
       }
 
+      // Get all accumulated ATXP steps from the service
+      const allSteps = (global as any).currentAtxpSteps || [];
+
       res.json({
         success: true,
         pricing: pricingData,
         cost: actualCost, // Use actual cost from MCP response
         executionTime,
+        atxpFlow: {
+          steps: allSteps,
+          totalSteps: allSteps.length,
+          totalCost: actualCost,
+          operation: 'get_pricing'
+        }
       });
     } catch (error) {
       console.error("Get pricing error:", error);

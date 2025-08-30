@@ -203,7 +203,7 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
             ) : (
               recentSteps.map((step, index) => (
                 <div
-                  key={step.id}
+                  key={`${step.id}-${step.timestamp}-${index}`}
                   className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 ${getStepColor(step.status)}`}
                   data-testid={`atxp-step-${step.id}`}
                 >
