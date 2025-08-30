@@ -227,6 +227,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.body.userId || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
+      // Clear previous flow steps
+      (global as any).currentAtxpSteps = [];
+      
+      // Validate payment first (this builds the authentication and validation steps)
+      const paymentValid = await atxpService.validatePayment({
+        userId,
+        toolName: "update_agent",
+        cost: 0.003
+      });
+      
+      if (!paymentValid) {
+        return res.status(402).json({ error: "Payment validation failed" });
+      }
+      
       // Call MCP server to update agent
       const mcpResponse = await mcpClient.callTool({
         name: "update_agent",
@@ -244,6 +258,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actualCost = mcpResponse.cost || 0;
       }
 
+      // Process payment (this adds execution and payment steps)
+      await atxpService.processPayment({
+        userId,
+        toolName: "update_agent",
+        cost: actualCost
+      });
+
       // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
@@ -255,7 +276,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response: mcpResponse,
       });
 
-      res.json(mcpResponse);
+      // Get all accumulated ATXP steps from the service
+      const allSteps = (global as any).currentAtxpSteps || [];
+
+      res.json({
+        ...mcpResponse,
+        atxpFlow: {
+          steps: allSteps,
+          totalSteps: allSteps.length,
+          totalCost: actualCost,
+          operation: 'update_agent'
+        }
+      });
     } catch (error) {
       console.error("Update agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
@@ -266,6 +298,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
+      
+      // Clear previous flow steps
+      (global as any).currentAtxpSteps = [];
+      
+      // Validate payment first (this builds the authentication and validation steps)
+      const paymentValid = await atxpService.validatePayment({
+        userId,
+        toolName: "delete_agent",
+        cost: 0.002
+      });
+      
+      if (!paymentValid) {
+        return res.status(402).json({ error: "Payment validation failed" });
+      }
       
       // Call MCP server to delete agent
       const mcpResponse = await mcpClient.callTool({
@@ -279,6 +325,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actualCost = mcpResponse.cost || 0;
       }
 
+      // Process payment (this adds execution and payment steps)
+      await atxpService.processPayment({
+        userId,
+        toolName: "delete_agent",
+        cost: actualCost
+      });
+
       // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
@@ -290,7 +343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response: mcpResponse,
       });
 
-      res.json(mcpResponse);
+      // Get all accumulated ATXP steps from the service
+      const allSteps = (global as any).currentAtxpSteps || [];
+
+      res.json({
+        ...mcpResponse,
+        atxpFlow: {
+          steps: allSteps,
+          totalSteps: allSteps.length,
+          totalCost: actualCost,
+          operation: 'delete_agent'
+        }
+      });
     } catch (error) {
       console.error("Delete agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
