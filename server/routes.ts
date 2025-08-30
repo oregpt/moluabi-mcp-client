@@ -367,67 +367,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
       
-      // Build ATXP flow log (instead of real-time broadcasting)
-      const flowSteps: any[] = [];
-      const addFlowStep = (step: any) => {
-        flowSteps.push({
-          ...step,
-          timestamp: new Date().toISOString(),
-          id: step.id || `step-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-        });
-      };
-
-      addFlowStep({
-        id: 'operation-start',
-        label: `Starting ${toolName} operation`,
-        status: 'success',
-        details: `User ${userId} requesting ${toolName}`
-      });
-
-      // Validate payment - no hardcoded cost
-      addFlowStep({
-        id: 'payment-validation',
-        label: 'Validating ATXP connection token...',
-        status: 'in-progress'
-      });
-
+      // Clear previous flow steps
+      (global as any).currentAtxpSteps = [];
+      
+      // Validate payment first (this builds the authentication and validation steps)
       const paymentValid = await atxpService.validatePayment({
         userId,
         toolName,
-        cost: 0, // Will be updated when real pricing is available
+        cost: 0.002 // Standard MCP tool cost
       });
-
+      
       if (!paymentValid) {
-        addFlowStep({
-          id: 'payment-validation',
-          label: 'ATXP token validation failed',
-          status: 'error',
-          details: 'Invalid or expired ATXP connection token'
-        });
         return res.status(402).json({ error: "Payment validation failed" });
       }
-
-      addFlowStep({
-        id: 'payment-validation', 
-        label: 'ATXP token validation successful',
-        status: 'success',
-        details: 'Connection token verified for ATXP Playground organization'
-      });
-
-      // Add MCP execution step
-      addFlowStep({
-        id: 'mcp-execution',
-        label: `Executing MCP tool: ${toolName}`,
-        status: 'in-progress',
-        details: `Calling MCP server with ${Object.keys(req.body.arguments || {}).length} parameters`
-      });
 
       // Call MCP tool
       const startTime = Date.now();
       let mcpResponse;
       let status = "success";
       let errorMessage;
-      let actualCost = 0; // No fallback - must come from MCP response
+      let actualCost = 0;
 
       try {
         // For user access tools, use the request body directly as arguments
@@ -435,87 +394,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? { agentId: req.body.agentId, userEmail: req.body.userEmail }
           : req.body.arguments || {};
         
-          
         mcpResponse = await mcpClient.callTool({
           name: toolName,
           arguments: toolArguments,
         });
         
-        // Extract actual cost from MCP response - new format from working examples
+        // Extract actual cost from MCP response
         if (mcpResponse && typeof mcpResponse === 'object') {
           if ('cost' in mcpResponse && typeof mcpResponse.cost === 'number') {
             actualCost = mcpResponse.cost;
           }
         }
-        
-        // Add MCP success step
-        addFlowStep({
-          id: 'mcp-execution',
-          label: `MCP tool ${toolName} completed successfully`,
-          status: 'success',
-          details: `Cost extracted: $${actualCost.toFixed(3)}`,
-          cost: actualCost,
-          duration: Date.now() - startTime
-        });
       } catch (error) {
         status = "error";
         errorMessage = error instanceof Error ? error.message : "MCP call failed";
         mcpResponse = null;
         actualCost = 0;
-        
-        // Add MCP error step
-        addFlowStep({
-          id: 'mcp-execution',
-          label: `MCP tool ${toolName} failed`,
-          status: 'error',
-          details: errorMessage || 'Unknown MCP error',
-          duration: Date.now() - startTime
-        });
       }
 
       const executionTime = Date.now() - startTime;
 
-      // Process payment with actual cost
+      // Process payment (this adds execution and payment steps)
       if (status === "success") {
-        addFlowStep({
-          id: 'payment-processing',
-          label: `Processing ATXP payment ($${actualCost.toFixed(3)})`,
-          status: 'in-progress',
-          details: 'Attempting payment via ATXP protocol'
+        await atxpService.processPayment({
+          userId,
+          toolName,
+          cost: actualCost,
         });
-        
-        try {
-          await atxpService.processPayment({
-            userId,
-            toolName,
-            cost: actualCost,
-          });
-          
-          addFlowStep({
-            id: 'payment-processing',
-            label: 'ATXP payment completed',
-            status: 'success',
-            details: `Payment of $${actualCost.toFixed(3)} processed successfully`,
-            cost: actualCost
-          });
-        } catch (paymentError) {
-          addFlowStep({
-            id: 'payment-processing',
-            label: 'ATXP payment bypassed (development mode)',
-            status: 'success',
-            details: 'Payment APIs unavailable - Operation continuing in development mode',
-            cost: actualCost
-          });
-        }
       }
-
-      // Add usage recording step
-      addFlowStep({
-        id: 'usage-recording',
-        label: 'Recording tool usage...',
-        status: 'in-progress',
-        details: `Saving ${toolName} execution data`
-      });
 
       // Record usage with actual cost
       await storage.recordToolUsage({
@@ -529,30 +435,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         request: req.body,
         response: mcpResponse,
       });
-      
-      // Add final success step
-      addFlowStep({
-        id: 'usage-recording',
-        label: 'Tool usage recorded successfully',
-        status: 'success',
-        details: `${toolName} execution completed and logged`,
-        cost: actualCost
-      });
 
       if (status === "error") {
         return res.status(500).json({ error: errorMessage });
       }
 
-      // Return the response with ATXP flow logs
+      // Return the response with standard ATXP flow
       const responseData = mcpResponse && typeof mcpResponse === 'object' && 'success' in mcpResponse
         ? { ...mcpResponse, executionTime }
         : { success: true, response: mcpResponse, cost: actualCost, executionTime };
       
-      // Get comprehensive ATXP steps from the service
-      const comprehensiveSteps = (global as any).currentAtxpSteps || [];
-      const allSteps = [...comprehensiveSteps, ...flowSteps];
+      // Get all accumulated ATXP steps from the service
+      const allSteps = (global as any).currentAtxpSteps || [];
       
-      // Add ATXP flow data to response for frontend
       res.json({
         ...responseData,
         atxpFlow: {
