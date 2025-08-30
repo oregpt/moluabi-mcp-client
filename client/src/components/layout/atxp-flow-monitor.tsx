@@ -223,7 +223,7 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
                         {step.duration !== undefined && (
                           <span>{step.duration}ms</span>
                         )}
-                        <span>{step.timestamp.toLocaleTimeString()}</span>
+                        <span>{new Date(step.timestamp).toLocaleTimeString()}</span>
                       </div>
                     </div>
                     
