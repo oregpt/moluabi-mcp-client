@@ -7,6 +7,7 @@ import ListAgentsDisplay from "@/components/tools/list-agents-display";
 import ChatInterface from "@/components/tools/chat-interface";
 import DynamicToolForm from "@/components/tools/dynamic-tool-form";
 import LoadingOverlay from "@/components/ui/loading-overlay";
+import { AtxpFlowMonitor } from "@/components/layout/atxp-flow-monitor";
 import { useCostTracker } from "@/hooks/use-cost-tracker";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -266,6 +267,8 @@ export default function Dashboard() {
         message={loadingMessage}
         cost={currentConfig.cost}
       />
+      
+      <AtxpFlowMonitor />
     </div>
   );
 }

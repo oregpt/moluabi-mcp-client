@@ -96,8 +96,28 @@ export class AtxpService {
   }
 
   async validatePayment(payment: AtxpPayment): Promise<boolean> {
+    // Broadcast validation start
+    const broadcast = (global as any).broadcastAtxpFlow;
+    if (broadcast) {
+      broadcast({
+        stepId: 'token-validation',
+        label: 'Validating ATXP connection token...',
+        status: 'in-progress',
+        operation: `${payment.toolName} validation`,
+        details: `Checking token for ${payment.toolName}`
+      });
+    }
+
     if (!this.account) {
       console.log(`No ATXP account - payment validation failed for ${payment.toolName}`);
+      if (broadcast) {
+        broadcast({
+          stepId: 'token-validation',
+          label: 'ATXP validation failed - No account',
+          status: 'error',
+          details: 'ATXP account not initialized'
+        });
+      }
       return false;
     }
 
@@ -109,21 +129,68 @@ export class AtxpService {
       
       if (!token) {
         console.log(`No connection token - payment validation failed for ${payment.toolName}`);
+        if (broadcast) {
+          broadcast({
+            stepId: 'token-validation',
+            label: 'ATXP validation failed - No token',
+            status: 'error',
+            details: 'Connection token not found in ATXP_CONNECTION'
+          });
+        }
         return false;
       }
       
       // For now, allow payments if we have a valid token
       // In the future, this could check actual balance
       console.log(`Payment validation passed for ${payment.toolName} - $${payment.cost}`);
+      if (broadcast) {
+        broadcast({
+          stepId: 'token-validation',
+          label: 'ATXP token validation successful',
+          status: 'success',
+          details: `Token: ${token.substring(0, 8)}... - Ready for ${payment.toolName}`,
+          cost: payment.cost
+        });
+      }
       return true;
     } catch (error) {
       console.error("Payment validation failed:", error);
+      if (broadcast) {
+        broadcast({
+          stepId: 'token-validation',
+          label: 'ATXP validation error',
+          status: 'error',
+          details: error instanceof Error ? error.message : 'Validation failed'
+        });
+      }
       return false;
     }
   }
 
   async processPayment(payment: AtxpPayment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+    const broadcast = (global as any).broadcastAtxpFlow;
+    
+    // Broadcast payment processing start
+    if (broadcast) {
+      broadcast({
+        stepId: 'payment-processing',
+        label: 'Processing ATXP payment...',
+        status: 'in-progress',
+        operation: `${payment.toolName} payment`,
+        details: `Amount: $${payment.cost.toFixed(3)}`,
+        cost: payment.cost
+      });
+    }
+
     if (!this.account) {
+      if (broadcast) {
+        broadcast({
+          stepId: 'payment-processing',
+          label: 'Payment failed - No ATXP account',
+          status: 'error',
+          details: 'ATXP account not initialized'
+        });
+      }
       return {
         success: false,
         error: 'ATXP account not initialized',
@@ -136,6 +203,14 @@ export class AtxpService {
       const token = url.searchParams.get('connection_token');
       
       if (!token) {
+        if (broadcast) {
+          broadcast({
+            stepId: 'payment-processing',
+            label: 'Payment failed - No connection token',
+            status: 'error',
+            details: 'Connection token not found'
+          });
+        }
         return {
           success: false,
           error: 'No connection token found',
@@ -168,7 +243,9 @@ export class AtxpService {
         timestamp: new Date().toISOString()
       };
 
+      let endpointsTried = 0;
       for (const endpoint of paymentEndpoints) {
+        endpointsTried++;
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
@@ -184,6 +261,16 @@ export class AtxpService {
             const data = await response.json();
             console.log(`ATXP payment response from ${endpoint}:`, data);
             
+            if (broadcast) {
+              broadcast({
+                stepId: 'payment-processing',
+                label: 'ATXP payment successful',
+                status: 'success',
+                details: `Transaction ID: ${data.transactionId || data.id || 'generated'}`,
+                cost: payment.cost
+              });
+            }
+            
             return {
               success: true,
               transactionId: data.transactionId || data.id || data.payment_id || `atxp_${Date.now()}`,
@@ -196,13 +283,31 @@ export class AtxpService {
         }
       }
       
-      // If all payment APIs fail, return error
+      // If all payment APIs fail, broadcast warning and continue
+      if (broadcast) {
+        broadcast({
+          stepId: 'payment-processing',
+          label: 'Payment APIs unavailable - Operation continuing',
+          status: 'warning',
+          details: `All ${endpointsTried} payment endpoints returned 404 (prototype mode)`,
+          cost: payment.cost
+        });
+      }
+      
       return {
         success: false,
         error: 'All ATXP payment endpoints failed - service may be unavailable',
       };
     } catch (error) {
       console.error("Payment processing failed:", error);
+      if (broadcast) {
+        broadcast({
+          stepId: 'payment-processing',
+          label: 'Payment processing error',
+          status: 'error',
+          details: error instanceof Error ? error.message : 'Unknown payment error'
+        });
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : "Payment failed",

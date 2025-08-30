@@ -217,6 +217,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(402).json({ error: "Payment validation failed" });
       }
 
+      // Broadcast MCP execution start
+      const broadcast = (global as any).broadcastAtxpFlow;
+      if (broadcast) {
+        broadcast({
+          stepId: 'mcp-execution',
+          label: `Executing MCP tool: ${toolName}`,
+          status: 'in-progress',
+          operation: `${toolName} execution`,
+          details: `Calling MCP server with ${Object.keys(req.body.arguments || {}).length} parameters`
+        });
+      }
+
       // Call MCP tool
       const startTime = Date.now();
       let mcpResponse;
@@ -242,11 +254,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             actualCost = mcpResponse.cost;
           }
         }
+        
+        // Broadcast MCP success
+        if (broadcast) {
+          broadcast({
+            stepId: 'mcp-execution',
+            label: `MCP tool ${toolName} completed successfully`,
+            status: 'success',
+            details: `Cost extracted: $${actualCost.toFixed(3)}`,
+            cost: actualCost,
+            duration: Date.now() - startTime
+          });
+        }
       } catch (error) {
         status = "error";
         errorMessage = error instanceof Error ? error.message : "MCP call failed";
         mcpResponse = null;
         actualCost = 0;
+        
+        // Broadcast MCP error
+        if (broadcast) {
+          broadcast({
+            stepId: 'mcp-execution',
+            label: `MCP tool ${toolName} failed`,
+            status: 'error',
+            details: errorMessage || 'Unknown MCP error',
+            duration: Date.now() - startTime
+          });
+        }
       }
 
       const executionTime = Date.now() - startTime;
@@ -257,6 +292,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           toolName,
           cost: actualCost,
+        });
+      }
+
+      // Broadcast usage recording
+      if (broadcast) {
+        broadcast({
+          stepId: 'usage-recording',
+          label: 'Recording tool usage...',
+          status: 'in-progress',
+          details: `Saving ${toolName} execution data`
         });
       }
 
@@ -272,6 +317,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         request: req.body,
         response: mcpResponse,
       });
+      
+      // Broadcast usage recording success
+      if (broadcast) {
+        broadcast({
+          stepId: 'usage-recording',
+          label: 'Tool usage recorded successfully',
+          status: 'success',
+          details: `${toolName} data saved to storage`,
+          cost: actualCost
+        });
+      }
 
       if (status === "error") {
         return res.status(500).json({ error: errorMessage });
@@ -415,6 +471,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket setup for real-time updates
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Global WebSocket broadcast function
+  const broadcastAtxpFlow = (stepData: any) => {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'atxp-flow',
+          ...stepData
+        }));
+      }
+    });
+  };
+  
+  // Make broadcastAtxpFlow available globally
+  (global as any).broadcastAtxpFlow = broadcastAtxpFlow;
   
   wss.on('connection', (ws: WebSocket) => {
     console.log('WebSocket client connected');
