@@ -12,10 +12,10 @@ export default function Header({ title, description, cost, onMenuToggle }: Heade
         <div className="flex items-center space-x-4">
           <button 
             onClick={onMenuToggle}
-            className="lg:hidden p-2 hover:bg-secondary rounded-md"
+            className="block lg:hidden p-2 hover:bg-secondary rounded-md border border-border"
             data-testid="menu-toggle"
           >
-            <i className="fas fa-bars text-muted-foreground"></i>
+            <i className="fas fa-bars text-foreground text-lg"></i>
           </button>
           <div>
             <h2 className="text-xl font-semibold text-foreground">{title}</h2>
