@@ -61,16 +61,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
-      // Call MCP server to list agents
-      const mcpResponse = await mcpClient.callTool({
-        name: "list_agents",
-        arguments: {}
+      // Create ATXP payment for this operation
+      const payment = {
+        toolName: 'list_agents',
+        cost: 0.001,
+        userId: userId
+      };
+      
+      // Run full ATXP protocol flow
+      const flowData = await atxpClient.executeWithFlow(payment, async () => {
+        // Call MCP server to list agents with API key
+        return await mcpClient.callTool({
+          name: "list_agents",
+          arguments: { apiKey: "mab_cc4d049c" }
+        });
       });
       
-      // Extract cost from MCP response
+      // Extract actual cost from MCP response
       let actualCost = 0;
-      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+      if (flowData.result && typeof flowData.result === 'object' && 'cost' in flowData.result) {
+        actualCost = flowData.result.cost || 0.001;
       }
       
       // Record tool usage with actual cost
@@ -80,27 +90,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cost: actualCost.toString(),
         status: "success",
         request: { userId },
-        response: mcpResponse,
+        response: flowData.result,
       });
 
-      // Include ATXP flow data in response
+      // Return response with complete ATXP flow data
       res.json({
-        ...mcpResponse,
-        atxpFlow: {
-          steps: [
-            {
-              id: 'list-agents-success',
-              label: 'List agents completed',
-              status: 'success',
-              timestamp: new Date().toISOString(),
-              details: `Retrieved agent list with cost $${actualCost.toFixed(3)}`,
-              cost: actualCost
-            }
-          ],
-          totalSteps: 1,
-          totalCost: actualCost,
-          operation: 'list_agents'
-        }
+        ...flowData.result,
+        atxpFlow: flowData.flowData
       });
     } catch (error) {
       console.error("List agents error:", error);
@@ -113,16 +109,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      // Call MCP server to get agent
-      const mcpResponse = await mcpClient.callTool({
-        name: "get_agent",
-        arguments: { agentId }
+      // Create ATXP payment for this operation
+      const payment = {
+        toolName: 'get_agent',
+        cost: 0.001,
+        userId: userId
+      };
+      
+      // Run full ATXP protocol flow
+      const flowData = await atxpClient.executeWithFlow(payment, async () => {
+        // Call MCP server to get agent with API key
+        return await mcpClient.callTool({
+          name: "get_agent",
+          arguments: { apiKey: "mab_cc4d049c", agentId }
+        });
       });
       
-      // Extract cost from MCP response
+      // Extract actual cost from MCP response
       let actualCost = 0;
-      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+      if (flowData.result && typeof flowData.result === 'object' && 'cost' in flowData.result) {
+        actualCost = flowData.result.cost || 0.001;
       }
 
       // Record tool usage with actual cost
@@ -133,10 +139,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cost: actualCost.toString(),
         status: "success",
         request: { agentId, userId },
-        response: mcpResponse,
+        response: flowData.result,
       });
 
-      res.json(mcpResponse);
+      // Return response with complete ATXP flow data
+      res.json({
+        ...flowData.result,
+        atxpFlow: flowData.flowData
+      });
     } catch (error) {
       console.error("Get agent error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
