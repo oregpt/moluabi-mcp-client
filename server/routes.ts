@@ -206,6 +206,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
       
+      // Broadcast operation start
+      const broadcast = (global as any).broadcastAtxpFlow;
+      if (broadcast) {
+        broadcast({
+          stepId: 'operation-start',
+          label: `Starting ${toolName} operation`,
+          status: 'in-progress',
+          operation: `${toolName} request`,
+          details: `User ${userId} requesting ${toolName}`
+        });
+      }
+
       // Validate payment - no hardcoded cost
       const paymentValid = await atxpService.validatePayment({
         userId,
@@ -217,8 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(402).json({ error: "Payment validation failed" });
       }
 
-      // Broadcast MCP execution start
-      const broadcast = (global as any).broadcastAtxpFlow;
+      // Broadcast MCP execution start (reuse broadcast variable)
       if (broadcast) {
         broadcast({
           stepId: 'mcp-execution',

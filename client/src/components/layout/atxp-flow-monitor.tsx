@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Activity, Clock, Check, AlertTriangle, X, Trash2 } from 'lucide-react';
+import { useWebSocket } from '@/hooks/use-websocket';
 
 interface AtxpFlowStep {
   id: string;
@@ -16,66 +17,70 @@ interface AtxpFlowMonitorProps {
 }
 
 export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Start expanded for testing
   const [steps, setSteps] = useState<AtxpFlowStep[]>([]);
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
+  const { subscribe } = useWebSocket();
 
-  // Listen for WebSocket events
+  // Listen for ATXP flow events using existing WebSocket
   useEffect(() => {
-    const handleAtxpEvent = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'atxp-flow') {
-          const step: AtxpFlowStep = {
-            id: data.stepId || `step-${Date.now()}`,
-            label: data.label,
-            status: data.status,
-            timestamp: new Date(),
-            details: data.details,
-            cost: data.cost,
-            duration: data.duration
-          };
-          
-          setSteps(prev => {
-            // Update existing step or add new one
-            const existingIndex = prev.findIndex(s => s.id === step.id);
-            if (existingIndex >= 0) {
-              const updated = [...prev];
-              updated[existingIndex] = step;
-              return updated;
-            }
-            return [...prev, step];
-          });
+    // Add a test step to verify the UI works
+    setTimeout(() => {
+      console.log('🧪 Adding test ATXP flow step');
+      setSteps([{
+        id: 'test-step',
+        label: 'ATXP Flow Monitor Ready',
+        status: 'success',
+        timestamp: new Date(),
+        details: 'Flow monitor initialized - Execute any tool to see ATXP steps',
+        cost: 0.001
+      }]);
+    }, 1000);
 
-          // Auto-expand during operations
-          if (data.status === 'in-progress') {
-            setIsExpanded(true);
-            setCurrentOperation(data.operation || null);
-          }
-          
-          // Auto-minimize after completion (with delay)
-          if (data.status === 'success' || data.status === 'error') {
-            setCurrentOperation(null);
-            setTimeout(() => setIsExpanded(false), 3000);
-          }
+    // Subscribe to ATXP flow events
+    const unsubscribe = subscribe('atxp-flow', (data: any) => {
+      console.log('📨 ATXP Flow Event received:', data);
+      
+      const step: AtxpFlowStep = {
+        id: data.stepId || `step-${Date.now()}`,
+        label: data.label,
+        status: data.status,
+        timestamp: new Date(),
+        details: data.details,
+        cost: data.cost,
+        duration: data.duration
+      };
+      
+      console.log('🔄 Adding ATXP step:', step);
+      
+      setSteps(prev => {
+        // Update existing step or add new one
+        const existingIndex = prev.findIndex(s => s.id === step.id);
+        if (existingIndex >= 0) {
+          const updated = [...prev];
+          updated[existingIndex] = step;
+          return updated;
         }
-      } catch (error) {
-        console.error('Failed to parse ATXP flow event:', error);
-      }
-    };
+        return [...prev, step];
+      });
 
-    // Connect to existing WebSocket
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
-    
-    socket.addEventListener('message', handleAtxpEvent);
-    
+      // Auto-expand during operations
+      if (data.status === 'in-progress') {
+        setIsExpanded(true);
+        setCurrentOperation(data.operation || null);
+      }
+      
+      // Auto-minimize after completion (with delay)
+      if (data.status === 'success' || data.status === 'error') {
+        setCurrentOperation(null);
+        setTimeout(() => setIsExpanded(false), 3000);
+      }
+    });
+
     return () => {
-      socket.removeEventListener('message', handleAtxpEvent);
-      socket.close();
+      unsubscribe();
     };
-  }, []);
+  }, [subscribe]);
 
   const getStepIcon = (status: AtxpFlowStep['status']) => {
     switch (status) {
