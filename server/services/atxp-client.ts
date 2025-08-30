@@ -96,6 +96,32 @@ export class AtxpService {
   }
 
   async validatePayment(payment: AtxpPayment): Promise<boolean> {
+    // Start building comprehensive flow steps
+    const flowSteps = [];
+    
+    // Step 1: Authentication
+    flowSteps.push({
+      id: 'auth-start',
+      label: 'ATXP Authentication',
+      status: 'success',
+      timestamp: new Date().toISOString(),
+      details: `Authenticating with API key for ${payment.toolName}`,
+      cost: 0
+    });
+    
+    // Step 2: Token validation
+    flowSteps.push({
+      id: 'token-validation',
+      label: 'Token Validation',
+      status: 'success', 
+      timestamp: new Date().toISOString(),
+      details: `Validating connection token for user ${payment.userId}`,
+      cost: 0
+    });
+    
+    // Store steps globally for the final response
+    (global as any).currentAtxpSteps = flowSteps;
+    
     // Broadcast validation start
     const broadcast = (global as any).broadcastAtxpFlow;
     if (broadcast) {
@@ -169,6 +195,29 @@ export class AtxpService {
 
   async processPayment(payment: AtxpPayment): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     const broadcast = (global as any).broadcastAtxpFlow;
+    
+    // Add execution step to the flow
+    const currentSteps = (global as any).currentAtxpSteps || [];
+    currentSteps.push({
+      id: 'tool-execution',
+      label: 'Tool Execution',
+      status: 'success',
+      timestamp: new Date().toISOString(),
+      details: `Executing ${payment.toolName} via MCP protocol`,
+      cost: payment.cost
+    });
+    
+    // Add payment processing step
+    currentSteps.push({
+      id: 'payment-processing',
+      label: 'Payment Processing',
+      status: 'in-progress',
+      timestamp: new Date().toISOString(),
+      details: `Processing payment of $${payment.cost.toFixed(3)}`,
+      cost: payment.cost
+    });
+    
+    (global as any).currentAtxpSteps = currentSteps;
     
     // Broadcast payment processing start
     if (broadcast) {
@@ -261,6 +310,26 @@ export class AtxpService {
             const data = await response.json();
             console.log(`ATXP payment response from ${endpoint}:`, data);
             
+            // Mark payment processing as complete
+            const currentSteps = (global as any).currentAtxpSteps || [];
+            const paymentStepIndex = currentSteps.findIndex(s => s.id === 'payment-processing');
+            if (paymentStepIndex >= 0) {
+              currentSteps[paymentStepIndex].status = 'success';
+              currentSteps[paymentStepIndex].details = `Payment completed - Transaction ID: ${data.transactionId || data.id || 'generated'}`;
+            }
+            
+            // Add completion step
+            currentSteps.push({
+              id: 'operation-complete',
+              label: 'Operation Complete',
+              status: 'success',
+              timestamp: new Date().toISOString(),
+              details: `${payment.toolName} executed successfully with ATXP payment`,
+              cost: 0
+            });
+            
+            (global as any).currentAtxpSteps = currentSteps;
+            
             if (broadcast) {
               broadcast({
                 stepId: 'payment-processing',
@@ -283,7 +352,26 @@ export class AtxpService {
         }
       }
       
-      // If all payment APIs fail, broadcast warning and continue
+      // If all payment APIs fail, mark payment step as warning and add completion
+      const currentSteps = (global as any).currentAtxpSteps || [];
+      const paymentStepIndex = currentSteps.findIndex(s => s.id === 'payment-processing');
+      if (paymentStepIndex >= 0) {
+        currentSteps[paymentStepIndex].status = 'warning';
+        currentSteps[paymentStepIndex].details = `Payment APIs unavailable - continuing in prototype mode`;
+      }
+      
+      // Add completion step even if payment failed
+      currentSteps.push({
+        id: 'operation-complete',
+        label: 'Operation Complete',
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        details: `${payment.toolName} executed successfully (payment in prototype mode)`,
+        cost: 0
+      });
+      
+      (global as any).currentAtxpSteps = currentSteps;
+      
       if (broadcast) {
         broadcast({
           stepId: 'payment-processing',

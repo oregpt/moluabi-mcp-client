@@ -61,6 +61,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
+      // Clear previous flow steps
+      (global as any).currentAtxpSteps = [];
+      
+      // Validate payment first (this builds the authentication and validation steps)
+      const paymentValid = await atxpService.validatePayment({
+        userId,
+        toolName: "list_agents",
+        cost: 0.001
+      });
+      
+      if (!paymentValid) {
+        return res.status(402).json({ error: "Payment validation failed" });
+      }
+      
       // Call MCP server to list agents
       const mcpResponse = await mcpClient.callTool({
         name: "list_agents",
@@ -73,6 +87,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actualCost = mcpResponse.cost || 0;
       }
       
+      // Process payment (this adds execution and payment steps)
+      await atxpService.processPayment({
+        userId,
+        toolName: "list_agents",
+        cost: actualCost
+      });
+      
       // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
@@ -83,21 +104,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response: mcpResponse,
       });
 
-      // Include ATXP flow data in response
+      // Get all accumulated ATXP steps from the service
+      const allSteps = (global as any).currentAtxpSteps || [];
+      
+      // Include comprehensive ATXP flow data in response
       res.json({
         ...mcpResponse,
         atxpFlow: {
-          steps: [
-            {
-              id: 'list-agents-success',
-              label: 'List agents completed',
-              status: 'success',
-              timestamp: new Date().toISOString(),
-              details: `Retrieved agent list with cost $${actualCost.toFixed(3)}`,
-              cost: actualCost
-            }
-          ],
-          totalSteps: 1,
+          steps: allSteps,
+          totalSteps: allSteps.length,
           totalCost: actualCost,
           operation: 'list_agents'
         }
@@ -405,14 +420,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? { ...mcpResponse, executionTime }
         : { success: true, response: mcpResponse, cost: actualCost, executionTime };
       
+      // Get comprehensive ATXP steps from the service
+      const comprehensiveSteps = (global as any).currentAtxpSteps || [];
+      const allSteps = [...comprehensiveSteps, ...flowSteps];
+      
       // Add ATXP flow data to response for frontend
       res.json({
         ...responseData,
         atxpFlow: {
-          steps: flowSteps,
-          totalSteps: flowSteps.length,
+          steps: allSteps,
+          totalSteps: allSteps.length,
           totalCost: actualCost,
-          totalDuration: executionTime
+          operation: toolName
         }
       });
     } catch (error) {
