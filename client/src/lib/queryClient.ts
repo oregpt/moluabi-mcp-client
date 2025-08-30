@@ -52,6 +52,22 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: false,
+      onSuccess: (data: any) => {
+        // Check for ATXP flow data in mutation responses
+        if (data && data.atxpFlow && data.atxpFlow.steps) {
+          console.log('📋 Found ATXP flow data in mutation response:', data.atxpFlow);
+          
+          // Trigger ATXP flow monitor update
+          if ((window as any).updateAtxpFlow) {
+            (window as any).updateAtxpFlow(data.atxpFlow);
+          }
+          
+          // Also dispatch custom event
+          window.dispatchEvent(new CustomEvent('atxp-flow-update', { 
+            detail: data.atxpFlow 
+          }));
+        }
+      }
     },
   },
 });

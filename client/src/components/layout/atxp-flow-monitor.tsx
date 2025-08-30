@@ -22,65 +22,42 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
   const { subscribe } = useWebSocket();
 
-  // Listen for ATXP flow events using existing WebSocket
+  // Show ATXP flow logs once execution is complete  
   useEffect(() => {
-    // Add a test step to verify the UI works
-    setTimeout(() => {
-      console.log('🧪 Adding test ATXP flow step');
-      setSteps([{
-        id: 'test-step',
-        label: 'ATXP Flow Monitor Ready',
-        status: 'success',
-        timestamp: new Date(),
-        details: 'Flow monitor initialized - Execute any tool to see ATXP steps',
-        cost: 0.001
-      }]);
-    }, 1000);
-
-    // Subscribe to ATXP flow events
-    const unsubscribe = subscribe('atxp-flow', (data: any) => {
-      console.log('📨 ATXP Flow Event received:', data);
+    // Listen for ATXP flow updates via custom event
+    const handleAtxpFlowUpdate = (event: CustomEvent) => {
+      console.log('📋 Received ATXP flow update:', event.detail);
       
-      const step: AtxpFlowStep = {
-        id: data.stepId || `step-${Date.now()}`,
-        label: data.label,
-        status: data.status,
-        timestamp: new Date(),
-        details: data.details,
-        cost: data.cost,
-        duration: data.duration
-      };
-      
-      console.log('🔄 Adding ATXP step:', step);
-      
-      setSteps(prev => {
-        // Update existing step or add new one
-        const existingIndex = prev.findIndex(s => s.id === step.id);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = step;
-          return updated;
-        }
-        return [...prev, step];
-      });
-
-      // Auto-expand during operations
-      if (data.status === 'in-progress') {
+      if (event.detail && event.detail.steps) {
+        setSteps(event.detail.steps);
         setIsExpanded(true);
-        setCurrentOperation(data.operation || null);
-      }
-      
-      // Auto-minimize after completion (with delay)
-      if (data.status === 'success' || data.status === 'error') {
         setCurrentOperation(null);
-        setTimeout(() => setIsExpanded(false), 3000);
       }
-    });
+    };
+
+    // Listen for custom event dispatched when API calls complete
+    window.addEventListener('atxp-flow-update', handleAtxpFlowUpdate as EventListener);
 
     return () => {
-      unsubscribe();
+      window.removeEventListener('atxp-flow-update', handleAtxpFlowUpdate as EventListener);
     };
-  }, [subscribe]);
+  }, []);
+
+  // Expose function to update flow from external API calls
+  useEffect(() => {
+    (window as any).updateAtxpFlow = (flowData: any) => {
+      console.log('📋 Manual ATXP flow update:', flowData);
+      if (flowData && flowData.steps) {
+        setSteps(flowData.steps);
+        setIsExpanded(true);
+        setCurrentOperation(null);
+      }
+    };
+
+    return () => {
+      delete (window as any).updateAtxpFlow;
+    };
+  }, []);
 
   const getStepIcon = (status: AtxpFlowStep['status']) => {
     switch (status) {
