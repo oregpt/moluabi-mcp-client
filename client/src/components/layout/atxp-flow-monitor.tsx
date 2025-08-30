@@ -26,12 +26,19 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
   useEffect(() => {
     // Listen for ATXP flow updates via custom event
     const handleAtxpFlowUpdate = (event: CustomEvent) => {
-      console.log('📋 Received ATXP flow update:', event.detail);
+      console.log('📋 Received ATXP flow update via custom event:', event.detail);
+      console.log('📋 Event detail type:', typeof event.detail);
+      console.log('📋 Event detail steps:', event.detail?.steps);
       
       if (event.detail && event.detail.steps) {
+        console.log('📋 Custom event setting steps:', event.detail.steps);
+        console.log('📋 Steps count:', event.detail.steps.length);
         setSteps(event.detail.steps);
         setIsExpanded(true);
         setCurrentOperation(null);
+        console.log('📋 Custom event handler completed - UI should update');
+      } else {
+        console.log('❌ Invalid event detail or missing steps:', event.detail);
       }
     };
 
@@ -46,12 +53,17 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
   // Expose function to update flow from external API calls
   useEffect(() => {
     (window as any).updateAtxpFlow = (flowData: any) => {
-      console.log('📋 Manual ATXP flow update:', flowData);
+      console.log('📋 Manual ATXP flow update received:', flowData);
+      console.log('📋 Current steps before update:', steps);
       if (flowData && flowData.steps) {
-        console.log('📋 Setting steps:', flowData.steps);
+        console.log('📋 Setting new steps:', flowData.steps);
+        console.log('📋 Steps array length:', flowData.steps.length);
         setSteps(flowData.steps);
         setIsExpanded(true);
         setCurrentOperation(null);
+        console.log('📋 UI state updated - expanded and operation cleared');
+      } else {
+        console.log('❌ No valid steps in flow data:', flowData);
       }
     };
 
@@ -116,6 +128,9 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
 
   const hasActiveOperation = currentOperation || steps.some(s => s.status === 'in-progress');
   const recentSteps = steps.slice(-10); // Show last 10 steps
+  
+  // Log current state for debugging
+  console.log('📋 ATXP Flow Monitor render - steps:', steps.length, 'expanded:', isExpanded, 'visible:', isVisible);
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border transition-all duration-300 ease-in-out ${
