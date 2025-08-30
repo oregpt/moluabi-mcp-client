@@ -48,14 +48,42 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
     (window as any).updateAtxpFlow = (flowData: any) => {
       console.log('📋 Manual ATXP flow update:', flowData);
       if (flowData && flowData.steps) {
+        console.log('📋 Setting steps:', flowData.steps);
         setSteps(flowData.steps);
         setIsExpanded(true);
         setCurrentOperation(null);
       }
     };
 
+    // Also add a test function to manually trigger for debugging
+    (window as any).testAtxpFlow = () => {
+      console.log('🧪 Testing ATXP flow with sample data');
+      const testFlow = {
+        steps: [
+          {
+            id: 'test-1',
+            label: 'Test Step 1',
+            status: 'success',
+            timestamp: new Date().toISOString(),
+            details: 'This is a test step',
+            cost: 0.001
+          },
+          {
+            id: 'test-2', 
+            label: 'Test Step 2',
+            status: 'success',
+            timestamp: new Date().toISOString(),
+            details: 'This is another test step',
+            cost: 0.002
+          }
+        ]
+      };
+      (window as any).updateAtxpFlow(testFlow);
+    };
+
     return () => {
       delete (window as any).updateAtxpFlow;
+      delete (window as any).testAtxpFlow;
     };
   }, []);
 
