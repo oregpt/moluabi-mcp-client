@@ -24,6 +24,17 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
       const cost = result?.cost || 0.001;
       onExecute(cost);
       
+      // Handle ATXP flow data from query response
+      if (result?.atxpFlow) {
+        console.log('📋 Found ATXP flow data in query response:', result.atxpFlow);
+        setTimeout(() => {
+          if ((window as any).updateAtxpFlow) {
+            console.log('📋 Calling updateAtxpFlow from query');
+            (window as any).updateAtxpFlow(result.atxpFlow);
+          }
+        }, 500);
+      }
+      
       return result;
     },
   });
