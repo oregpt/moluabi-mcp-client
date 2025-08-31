@@ -69,18 +69,23 @@ export class AtxpService {
 
     try {
       console.log(`Making ATXP call for ${toolName} with working implementation pattern`);
+      console.log('Server URL:', serverUrl);
+      console.log('Tool Name:', toolName);
+      console.log('Tool Arguments:', JSON.stringify(toolArguments, null, 2));
       
       // Create client exactly like working implementation - try without logger first
       const client = await atxpClient({
         mcpServer: serverUrl,  // Use base server URL like working code
         account: this.atxpAccount,  // Direct account reference
         allowedAuthorizationServers: [
-          'http://localhost:5000',  // Add our local server first
+          'http://localhost:3001',  // Match working implementation port
           'https://auth.atxp.ai', 
           'https://atxp-accounts-staging.onrender.com/'
         ]
         // NO logger - match filestore implementation pattern
       });
+
+      console.log('ATXP client created successfully');
 
       // Use standard MCP format exactly like working implementation
       const result = await client.callTool({
@@ -88,7 +93,7 @@ export class AtxpService {
         arguments: toolArguments,
       });
       
-      console.log(`ATXP call successful for ${toolName}`);
+      console.log(`ATXP call successful for ${toolName}:`, result);
       return result;
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
