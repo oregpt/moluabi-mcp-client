@@ -18,30 +18,32 @@ export interface McpResponse {
 export class MoluAbiMcpClient {
   private client: Client | null = null;
   private transport: any | null = null;
-  private serverUrl = 'https://moluabi-mcp-server.replit.app';
-  private useAtxp = true; // Use ATXP for authenticated tool calls
+  private apiKeyServerUrl = 'https://moluabi-mcp-server.replit.app';
+  private atxpServerUrl = process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app:5001';
+  private paymentMethod: 'apikey' | 'atxp' = 'apikey'; // Default to API key method
 
   async connect(): Promise<void> {
     try {
       // For now, we'll use HTTP calls directly to the remote MCP server
       // Since the MCP SDK doesn't have built-in HTTP transport for remote servers
-      console.log(`Attempting to connect to remote MCP server: ${this.serverUrl}`);
+      const currentServerUrl = this.getCurrentServerUrl();
+      console.log(`Attempting to connect to remote MCP server: ${currentServerUrl} (${this.paymentMethod} mode)`);
       
       // Test connection to the remote server by trying to access the root
-      const response = await fetch(`${this.serverUrl}`, { 
+      const response = await fetch(`${currentServerUrl}`, { 
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
       
       if (response.ok) {
-        console.log(`Connected to remote MCP server: ${this.serverUrl}`);
+        console.log(`Connected to remote MCP server: ${currentServerUrl} (${this.paymentMethod} mode)`);
         // Mark as connected but we'll use HTTP calls instead of transport
         this.client = {} as Client; // Placeholder to indicate connection
       } else {
         throw new Error(`Server responded with status ${response.status}`);
       }
     } catch (error) {
-      console.warn(`Failed to connect to remote MCP server (${this.serverUrl}), using mock mode:`, error instanceof Error ? error.message : String(error));
+      console.warn(`Failed to connect to remote MCP server (${currentServerUrl}), using mock mode:`, error instanceof Error ? error.message : String(error));
       // Don't throw error, just set client to null to indicate mock mode
       this.client = null;
       this.transport = null;
@@ -57,6 +59,22 @@ export class MoluAbiMcpClient {
       await this.transport.close();
       this.transport = null;
     }
+  }
+
+  // Set payment method (apikey or atxp)
+  setPaymentMethod(method: 'apikey' | 'atxp'): void {
+    this.paymentMethod = method;
+    console.log(`Payment method set to: ${method}`);
+  }
+
+  // Get current server URL based on payment method
+  private getCurrentServerUrl(): string {
+    return this.paymentMethod === 'atxp' ? this.atxpServerUrl : this.apiKeyServerUrl;
+  }
+
+  // Get current payment method
+  getPaymentMethod(): 'apikey' | 'atxp' {
+    return this.paymentMethod;
   }
 
   async callTool(toolCall: McpToolCall): Promise<McpResponse> {
@@ -76,18 +94,37 @@ export class MoluAbiMcpClient {
         ...toolCall.arguments
       };
 
-      if (this.useAtxp) {
-        // Pure ATXP integration only
+      if (this.paymentMethod === 'atxp') {
+        // ATXP method: Use ATXP SDK with OAuth2 + crypto payments
+        console.log('Using ATXP payment method');
         const result = await atxpService.callMcpTool(
-          this.serverUrl,
+          this.atxpServerUrl,
           toolCall.name,
           authenticatedArguments
         );
         return result as McpResponse;
+      } else {
+        // API Key method: Direct HTTP call with account billing
+        console.log('Using API key payment method');
+        const response = await fetch(`${this.apiKeyServerUrl}/mcp/call`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: toolCall.name,
+            arguments: authenticatedArguments
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        return result as McpResponse;
       }
-      
-      // No fallback needed - if ATXP is disabled, we throw error
-      throw new Error('ATXP integration is required for MCP tool calls');
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
       throw error;
@@ -157,7 +194,8 @@ export class MoluAbiMcpClient {
       }
 
       // Use get_pricing tool instead of /pricing endpoint to match working examples
-      const response = await fetch(`${this.serverUrl}/mcp/call`, {
+      const currentServerUrl = this.getCurrentServerUrl();
+      const response = await fetch(`${currentServerUrl}/mcp/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

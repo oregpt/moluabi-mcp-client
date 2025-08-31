@@ -1,3 +1,5 @@
+import { PaymentMethodToggle } from './payment-method-toggle';
+
 interface HeaderProps {
   title: string;
   description: string;
@@ -23,6 +25,7 @@ export default function Header({ title, description, cost, onMenuToggle }: Heade
           </div>
         </div>
         <div className="flex items-center space-x-4">
+          <PaymentMethodToggle className="hidden md:flex" />
           <div className="cost-badge px-3 py-1 rounded-full text-xs font-medium text-white">
             Next Action: ${(cost || 0).toFixed(2)}
           </div>

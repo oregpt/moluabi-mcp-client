@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Activity, Clock, Check, AlertTriangle, X, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Activity, Clock, Check, AlertTriangle, X, Trash2, CreditCard, Wallet } from 'lucide-react';
 import { useWebSocket } from '@/hooks/use-websocket';
 
 interface AtxpFlowStep {
@@ -20,7 +20,28 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
   const [isExpanded, setIsExpanded] = useState(true); // Start expanded for testing
   const [steps, setSteps] = useState<AtxpFlowStep[]>([]);
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'apikey' | 'atxp'>('apikey');
   const { subscribe } = useWebSocket();
+
+  // Load current payment method
+  useEffect(() => {
+    const loadPaymentMethod = async () => {
+      try {
+        const response = await fetch('/api/payment-method');
+        const data = await response.json();
+        setPaymentMethod(data.paymentMethod || 'apikey');
+      } catch (error) {
+        console.error('Failed to load payment method:', error);
+      }
+    };
+
+    loadPaymentMethod();
+    
+    // Poll for payment method updates every 5 seconds
+    const interval = setInterval(loadPaymentMethod, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Show ATXP flow logs once execution is complete  
   useEffect(() => {
@@ -145,7 +166,20 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <Activity className={`w-4 h-4 ${hasActiveOperation ? 'text-blue-500 animate-pulse' : 'text-muted-foreground'}`} />
-            <span className="text-sm font-medium text-foreground">ATXP Flow Monitor</span>
+            <span className="text-sm font-medium text-foreground">Payment Flow Monitor</span>
+            <div className="flex items-center space-x-1 px-2 py-1 bg-muted rounded-md">
+              {paymentMethod === 'atxp' ? (
+                <>
+                  <Wallet className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">ATXP</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">API Key</span>
+                </>
+              )}
+            </div>
           </div>
           
           {currentOperation && (

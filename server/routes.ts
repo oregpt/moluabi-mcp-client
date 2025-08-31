@@ -438,6 +438,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment method toggle endpoint
+  app.post("/api/payment-method", async (req, res) => {
+    try {
+      const { method } = req.body;
+      
+      if (!method || !['apikey', 'atxp'].includes(method)) {
+        return res.status(400).json({ error: 'Invalid payment method. Must be "apikey" or "atxp"' });
+      }
+
+      // Update MCP client payment method
+      mcpClient.setPaymentMethod(method);
+      
+      console.log(`Payment method changed to: ${method}`);
+      
+      res.json({
+        success: true,
+        paymentMethod: method,
+        message: `Payment method set to ${method === 'apikey' ? 'API Key (Account Billing)' : 'ATXP (Crypto Billing)'}`
+      });
+    } catch (error) {
+      console.error("Payment method change error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get current payment method
+  app.get("/api/payment-method", async (req, res) => {
+    try {
+      const currentMethod = mcpClient.getPaymentMethod();
+      
+      res.json({
+        paymentMethod: currentMethod,
+        servers: {
+          apikey: 'https://moluabi-mcp-server.replit.app',
+          atxp: process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app:5001'
+        }
+      });
+    } catch (error) {
+      console.error("Get payment method error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // TEST: Call working ATXP server with our exact same client implementation
   app.get("/api/test-working-server", async (req, res) => {
     try {
