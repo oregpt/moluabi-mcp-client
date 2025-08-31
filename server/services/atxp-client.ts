@@ -38,7 +38,7 @@ export class AtxpService {
   }
 
   // Create 5-step ATXP flow for SDK-only architecture
-  createAtxpFlow(operation: string, cost: number, mcpResponse?: any): AtxpFlowData {
+  createAtxpFlow(operation: string, cost: number, mcpResponse?: any, mcpErrors?: string[]): AtxpFlowData {
     const now = new Date().toISOString();
     
     // Step 1: ATXP Authentication (validated by MCP server)
@@ -89,6 +89,9 @@ export class AtxpService {
     };
 
     // Step 4: Payment Confirmation (reflects actual MCP server response content)
+    // First, check if there were any ATXP errors during the call
+    const hasAtxpErrors = mcpErrors && mcpErrors.length > 0;
+    
     // Look at the actual words in the response to determine payment status
     const paymentSuccessKeywords = responseText && (
       responseText.toLowerCase().includes('payment processed') ||
@@ -109,6 +112,9 @@ export class AtxpService {
     if (!mcpSuccess) {
       paymentStatus = 'error';
       paymentDetails = 'Payment not processed due to operation failure';
+    } else if (hasAtxpErrors) {
+      paymentStatus = 'warning';
+      paymentDetails = `ATXP payment system unavailable: ${mcpErrors?.join(', ')}. Operation completed without payment processing.`;
     } else if (paymentFailureKeywords) {
       paymentStatus = 'error';
       paymentDetails = `Payment failed: ${responseText}`;
@@ -117,7 +123,7 @@ export class AtxpService {
       paymentDetails = 'Payment processed successfully through ATXP SDK';
     } else {
       paymentStatus = 'warning';
-      paymentDetails = 'Payment status unclear from response - may be in prototype mode';
+      paymentDetails = 'Payment status unclear from response - operation may be in prototype mode';
     }
     
     const paymentStep: AtxpFlowStep = {
