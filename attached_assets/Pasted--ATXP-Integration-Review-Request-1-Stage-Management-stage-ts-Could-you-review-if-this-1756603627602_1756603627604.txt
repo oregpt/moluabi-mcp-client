@@ -1,0 +1,150 @@
+# ATXP Integration Review Request
+
+## 1. Stage Management (stage.ts)
+
+**Could you review if this stage management approach would be beneficial for our application?**
+
+The current implementation uses a simple but effective stage tracking system that might be useful for monitoring long-running operations. Here's how it works:
+
+### Key Features:
+- Tracks operation progress through different stages
+- Provides real-time updates via Server-Sent Events (SSE)
+- Simple status management (in-progress, completed, error)
+
+### Implementation:
+
+```typescript
+// Stage type definition
+type Stage = {
+  id: string;
+  type: 'stage-update';
+  stage: string;
+  message: string;
+  timestamp: string;
+  status: 'in-progress' | 'completed' | 'error';
+};
+
+// Stage update creation
+export const createStageUpdate = (
+  requestId: string,
+  stage: string,
+  message: string,
+  status: Stage['status']
+): Stage => ({
+  id: requestId,
+  stage,
+  message,
+  timestamp: new Date().toISOString(),
+  status
+});
+
+// Sending updates to client
+export const sendStageUpdate = (
+  requestId: string,
+  stage: string,
+  message: string,
+  status: Stage['status']
+) => {
+  const stageUpdate = createStageUpdate(requestId, stage, message, status);
+  // Implementation that sends SSE to client
+};
+```
+
+### Usage Example:
+```typescript
+// At the start of an operation
+sendStageUpdate(requestId, 'initializing', 'Starting process...', 'in-progress');
+
+try {
+  // During operation
+  sendStageUpdate(requestId, 'processing', 'Processing data...', 'in-progress');
+  
+  // Operation logic here
+  
+  // On completion
+  sendStageUpdate(requestId, 'completed', 'Operation successful', 'completed');
+} catch (error) {
+  sendStageUpdate(requestId, 'error', 'Operation failed', 'error');
+}
+```
+
+## 2. ATXP Integration (server.ts)
+
+**Could you compare this ATXP integration approach with our current implementation?**
+
+### Key Integration Points:
+
+1. **Initialization**
+```typescript
+import { atxpClient, ATXPAccount } from '@atxp/client';
+
+// Account setup
+const account = new ATXPAccount(process.env.ATXP_CONNECTION_STRING, {
+  network: 'base'
+});
+
+// Client setup
+const imageClient = await atxpClient({
+  mcpServer: 'https://image.mcp.atxp.ai',
+  account: account,
+  allowedAuthorizationServers: [
+    'https://auth.atxp.ai',
+    'https://atxp-accounts-staging.onrender.com/'
+  ]
+});
+```
+
+2. **Making Requests**
+```typescript
+// Image generation example
+const result = await imageClient.callTool({
+  name: 'image_generation',
+  arguments: { prompt: 'A beautiful landscape' }
+});
+
+// File storage example
+const fileResult = await filestoreClient.callTool({
+  name: 'filestore_write',
+  arguments: { 
+    sourceUrl: 'https://example.com/image.jpg',
+    makePublic: true 
+  }
+});
+```
+
+3. **Error Handling**
+```typescript
+try {
+  // ATXP operations
+} catch (error) {
+  console.error('ATXP operation failed:', error);
+  // Handle specific error types
+  if (error.message.includes('payment')) {
+    // Handle payment errors
+  }
+}
+```
+
+## Questions for the Team:
+
+1. **Stage Management**
+   - Would this stage management approach be beneficial for our use case?
+   - Should we consider a more sophisticated solution or is this sufficient?
+   - Any potential performance concerns with the SSE approach?
+
+2. **ATXP Integration**
+   - How does this compare with our current implementation?
+   - Are there any security concerns with this approach?
+   - Should we consider any additional error handling or retry logic?
+   - Are there any optimizations we should consider?
+
+3. **General**
+   - Any potential issues or improvements you can identify?
+   - Should we consider any additional monitoring or logging?
+
+Looking forward to your feedback!
+
+## Additional Notes:
+- Current implementation handles wallet address case sensitivity issues (we've reported this to ATXP)
+- The stage management is currently in-memory; we might need a more persistent solution for production
+- Error handling is basic and might need enhancement based on our specific requirements
