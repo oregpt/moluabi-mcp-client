@@ -35,11 +35,16 @@ export class AtxpService {
       // Try to load ATXP SDK
       try {
         const { ATXPAccount } = await import('@atxp/client');
+        
+        // Debug log the connection string format like your working code
+        console.log('ATXP_CONNECTION_STRING:', connectionString ? '*** (set)' : 'not set');
+        
         this.atxpAccount = new ATXPAccount(connectionString, {
           network: 'base',
         });
         this.atxpAvailable = true;
         console.log("ATXP service initialized with SDK integration");
+        console.log('ATXPAccount initialized successfully');
       } catch (importError) {
         console.warn("ATXP SDK not available - will fall back to direct HTTP:", importError instanceof Error ? importError.message : String(importError));
         this.atxpAvailable = false;
@@ -63,21 +68,21 @@ export class AtxpService {
       const { atxpClient } = await import('@atxp/client');
       const { ConsoleLogger, LogLevel } = await import('@atxp/common');
 
-      console.log(`Making ATXP call for ${toolName} with standard MCP format`);
+      console.log(`Making ATXP call for ${toolName} with corrected ATXP client setup`);
       
-      const mcpEndpoint = `${serverUrl}/mcp/call`;
+      // The ATXP SDK expects the full MCP endpoint URL, not just the base server
       const client = await atxpClient({
-        mcpServer: mcpEndpoint,
+        mcpServer: `${serverUrl}/mcp/call`,
         account: this.atxpAccount,
         allowedAuthorizationServers: [
-          'https://auth.atxp.ai',
+          'https://auth.atxp.ai', 
           'https://atxp-accounts-staging.onrender.com/',
-          serverUrl
+          'http://localhost:5000'  // Add our local server
         ],
         logger: new ConsoleLogger({ level: LogLevel.DEBUG })
       });
 
-      // Try standard MCP format - ATXP SDK should pass this through correctly
+      // Use standard MCP format
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
@@ -87,6 +92,15 @@ export class AtxpService {
       return result;
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
+      
+      // Check if this is the specific endpoint routing issue
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Cannot POST /') || errorMessage.includes('HTTP 404')) {
+        console.log('ATXP endpoint routing issue detected - MCP server needs root endpoint configuration');
+        // Re-throw with a more specific message for the mcp-client fallback logic
+        throw new Error(`ATXP endpoint routing issue: ${errorMessage}`);
+      }
+      
       throw error;
     }
   }
