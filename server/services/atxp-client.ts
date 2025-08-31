@@ -62,7 +62,21 @@ export class AtxpService {
     };
 
     // Step 3: Tool Execution + Payment (single MCP call handles both)
-    const mcpSuccess = mcpResponse && typeof mcpResponse === 'object' && mcpResponse.success !== false;
+    // Check both HTTP success AND actual response content for real status
+    const hasResponse = mcpResponse && typeof mcpResponse === 'object';
+    const responseText = hasResponse && mcpResponse.content && mcpResponse.content[0] ? mcpResponse.content[0].text : '';
+    
+    // Look for failure keywords in the actual response text
+    const responseContainsError = responseText && (
+      responseText.toLowerCase().includes('error') ||
+      responseText.toLowerCase().includes('failed') ||
+      responseText.toLowerCase().includes('insufficient') ||
+      responseText.toLowerCase().includes('payment declined') ||
+      responseText.toLowerCase().includes('authentication failed')
+    );
+    
+    const mcpSuccess = hasResponse && mcpResponse.success !== false && !responseContainsError;
+    
     const executionStep: AtxpFlowStep = {
       id: 'tool-execution-payment',
       label: 'Tool Execution + Payment',
@@ -70,20 +84,41 @@ export class AtxpService {
       timestamp: new Date().toISOString(),
       details: mcpSuccess 
         ? `Executing ${operation} with integrated payment processing via MCP server`
-        : `${operation} execution failed on MCP server`,
+        : `${operation} execution failed: ${responseText || 'No response from MCP server'}`,
       cost: cost
     };
 
-    // Step 4: Payment Confirmation (reflects actual MCP server payment status)
-    // If MCP server failed, payment was definitely not processed
-    // If MCP server succeeded, we assume payment was processed unless explicitly told otherwise
-    const paymentWasProcessed = mcpSuccess && mcpResponse?.paymentFailed !== true;
-    const paymentStatus = paymentWasProcessed ? 'success' : (mcpSuccess ? 'warning' : 'error');
-    const paymentDetails = paymentWasProcessed
-      ? 'Payment processed successfully through ATXP SDK'
-      : mcpSuccess 
-        ? 'Payment APIs unavailable - operation completed in prototype mode'
-        : 'Payment not processed due to operation failure';
+    // Step 4: Payment Confirmation (reflects actual MCP server response content)
+    // Look at the actual words in the response to determine payment status
+    const paymentSuccessKeywords = responseText && (
+      responseText.toLowerCase().includes('payment processed') ||
+      responseText.toLowerCase().includes('transaction successful') ||
+      responseText.toLowerCase().includes('payment complete')
+    );
+    
+    const paymentFailureKeywords = responseText && (
+      responseText.toLowerCase().includes('payment failed') ||
+      responseText.toLowerCase().includes('payment declined') ||
+      responseText.toLowerCase().includes('insufficient funds') ||
+      responseText.toLowerCase().includes('payment error')
+    );
+    
+    let paymentStatus: 'success' | 'warning' | 'error';
+    let paymentDetails: string;
+    
+    if (!mcpSuccess) {
+      paymentStatus = 'error';
+      paymentDetails = 'Payment not processed due to operation failure';
+    } else if (paymentFailureKeywords) {
+      paymentStatus = 'error';
+      paymentDetails = `Payment failed: ${responseText}`;
+    } else if (paymentSuccessKeywords) {
+      paymentStatus = 'success';
+      paymentDetails = 'Payment processed successfully through ATXP SDK';
+    } else {
+      paymentStatus = 'warning';
+      paymentDetails = 'Payment status unclear from response - may be in prototype mode';
+    }
     
     const paymentStep: AtxpFlowStep = {
       id: 'payment-confirmation',
@@ -91,7 +126,7 @@ export class AtxpService {
       status: paymentStatus,
       timestamp: new Date().toISOString(),
       details: paymentDetails,
-      cost: paymentWasProcessed ? cost : 0
+      cost: paymentStatus === 'success' ? cost : 0
     };
 
     // Step 5: Operation Complete
@@ -101,7 +136,7 @@ export class AtxpService {
       status: mcpSuccess ? 'success' : 'error',
       timestamp: new Date().toISOString(),
       details: mcpSuccess 
-        ? `${operation} executed successfully${paymentStatus === 'warning' ? ' (payment in prototype mode)' : ''}`
+        ? `${operation} executed successfully${paymentStatus === 'warning' ? ' (payment status unclear)' : paymentStatus === 'error' ? ' (payment failed)' : ''}`
         : `${operation} execution failed`,
       cost: 0
     };
