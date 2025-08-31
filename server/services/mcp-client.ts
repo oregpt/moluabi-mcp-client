@@ -19,7 +19,7 @@ export class MoluAbiMcpClient {
   private client: Client | null = null;
   private transport: any | null = null;
   private apiKeyServerUrl = 'https://moluabi-mcp-server.replit.app';
-  private atxpServerUrl = process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app:5001';
+  private atxpServerUrl = process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app/atxp';
   private paymentMethod: 'apikey' | 'atxp' = 'apikey'; // Default to API key method
 
   async connect(): Promise<void> {

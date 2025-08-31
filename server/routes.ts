@@ -470,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: currentMethod,
         servers: {
           apikey: 'https://moluabi-mcp-server.replit.app',
-          atxp: process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app:5001'
+          atxp: process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app/atxp'
         }
       });
     } catch (error) {

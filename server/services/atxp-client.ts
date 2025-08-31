@@ -61,40 +61,55 @@ export class AtxpService {
     }
   }
 
-  // Pure ATXP integration matching working implementation exactly
+  // Direct HTTP call to ATXP endpoint (bypassing SDK for now)
   async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
-    if (!this.atxpAvailable || !this.atxpAccount) {
-      throw new Error("ATXP SDK not available - package not installed or import failed");
-    }
-
     try {
-      console.log(`Making ATXP call for ${toolName} with working implementation pattern`);
+      console.log(`Making direct ATXP call for ${toolName} to /atxp endpoint`);
       console.log('Server URL:', serverUrl);
       console.log('Tool Name:', toolName);
       console.log('Tool Arguments:', JSON.stringify(toolArguments, null, 2));
       
-      // Create client exactly like working implementation - try without logger first
-      const client = await atxpClient({
-        mcpServer: serverUrl,  // Use base server URL like working code
-        account: this.atxpAccount,  // Direct account reference
-        allowedAuthorizationServers: [
-          'http://localhost:3001',  // Match working implementation port
-          'https://auth.atxp.ai', 
-          'https://atxp-accounts-staging.onrender.com/'
-        ]
-        // NO logger - match filestore implementation pattern
+      // Use direct HTTP call with JSON-RPC format that we know works
+      const jsonRpcPayload = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: toolName,
+          arguments: toolArguments
+        },
+        id: Math.floor(Math.random() * 10000)
+      };
+
+      console.log('🔍 ATXP JSON-RPC payload:', JSON.stringify(jsonRpcPayload, null, 2));
+
+      const response = await fetch(serverUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonRpcPayload)
       });
 
-      console.log('ATXP client created successfully');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ATXP server responded with status ${response.status}: ${errorText}`);
+      }
 
-      // Use standard MCP format exactly like working implementation
-      const result = await client.callTool({
-        name: toolName,
-        arguments: toolArguments,
-      });
+      const result = await response.json();
+      console.log('🔍 ATXP response:', JSON.stringify(result, null, 2));
       
-      console.log(`ATXP call successful for ${toolName}:`, result);
-      return result;
+      // Check for JSON-RPC error
+      if (result.error) {
+        throw new Error(`ATXP JSON-RPC error: ${result.error.message || result.error}`);
+      }
+
+      // Return the result content in the expected format
+      if (result.result) {
+        console.log(`ATXP call successful for ${toolName}`);
+        return result.result;
+      }
+
+      throw new Error('Invalid ATXP response format');
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
       
