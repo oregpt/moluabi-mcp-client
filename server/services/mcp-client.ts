@@ -105,16 +105,10 @@ export class MoluAbiMcpClient {
         return result as McpResponse;
       } else {
         // API Key method: Use /mcp/call endpoint with direct HTTP
-        console.log('Using API key payment method with /mcp/call endpoint');
-        
         const requestBody = {
           name: toolCall.name,
           arguments: authenticatedArguments
         };
-        
-        // Debug final request
-        console.log('🔍 DEBUG - API key length in request:', authenticatedArguments.apiKey?.length);
-        console.log('🔍 DEBUG - Request:', JSON.stringify(requestBody, null, 2));
         
         const response = await fetch(`${this.apiKeyServerUrl}/mcp/call`, {
           method: 'POST',

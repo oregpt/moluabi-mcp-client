@@ -67,9 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "list_agents",
-        arguments: {
-          apiKey: "mab_cc4d049c"  // Include API key like working implementation
-        }
+        arguments: {}
       });
       
       // Extract cost from MCP response
@@ -109,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payload = {
         name: 'list_agents',
         arguments: {
-          apiKey: 'mab_cc4d049c'  // Use test API key
+          apiKey: process.env.MOLUABI_MCP_API_KEY  // Use full environment variable
         }
       };
       
