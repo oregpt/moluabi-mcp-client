@@ -78,10 +78,12 @@ export class AtxpService {
         mcpServer: serverUrl,
         account: this.atxpAccount,
         allowedAuthorizationServers: [
-          'http://localhost:3001',
           'https://auth.atxp.ai', 
-          'https://atxp-accounts-staging.onrender.com/'
-        ]
+          'https://atxp-accounts-staging.onrender.com/',
+          'http://localhost:3001'
+        ],
+        // Add resource server configuration to help with token resolution
+        resourceServer: serverUrl
       });
 
       console.log('ATXP client created successfully');

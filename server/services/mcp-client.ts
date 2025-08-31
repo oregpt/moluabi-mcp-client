@@ -98,7 +98,7 @@ export class MoluAbiMcpClient {
         // ATXP method: Use /atxp endpoint with JSON-RPC 2.0 and ATXP SDK
         console.log('Using ATXP payment method with /atxp endpoint');
         const result = await atxpService.callMcpTool(
-          `${this.apiKeyServerUrl}/atxp`,  // Use /atxp endpoint instead of separate port
+          this.atxpServerUrl,  // Use the properly configured ATXP server URL
           toolCall.name,
           authenticatedArguments
         );
