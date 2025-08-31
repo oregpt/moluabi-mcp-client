@@ -76,10 +76,8 @@ export class MoluAbiMcpClient {
         ...toolCall.arguments
       };
 
-      let atxpErrorMessage: string | undefined;
-      
       if (this.useAtxp) {
-        // Use ATXP client for authenticated, paid tool calls
+        // Use pure ATXP client for authenticated, paid tool calls
         try {
           const result = await atxpService.callMcpTool(
             this.serverUrl,
@@ -88,40 +86,15 @@ export class MoluAbiMcpClient {
           );
           return result as McpResponse;
         } catch (atxpError) {
-          // Capture the ATXP error message for display in payment flow
-          atxpErrorMessage = `ATXP call failed, falling back to direct HTTP: ${atxpError instanceof Error ? atxpError.message : String(atxpError)}`;
-          console.warn(atxpErrorMessage);
+          // ATXP failed - no fallback needed since server supports standard format
+          const errorMessage = `ATXP call failed: ${atxpError instanceof Error ? atxpError.message : String(atxpError)}`;
+          console.error(errorMessage);
+          throw new Error(errorMessage);
         }
       }
       
-      // Use the new HTTP endpoint for MCP tool calls with exact format from working examples
-      const payload = {
-        tool: toolCall.name,
-        arguments: authenticatedArguments
-      };
-      
-      
-      const response = await fetch(`${this.serverUrl}/mcp/call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      // Include ATXP error if it occurred
-      if (atxpErrorMessage) {
-        result.atxpError = atxpErrorMessage;
-      }
-      
-      return result as McpResponse;
+      // No fallback needed - if ATXP is disabled, we throw error
+      throw new Error('ATXP integration is required for MCP tool calls');
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
       throw error;

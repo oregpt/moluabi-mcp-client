@@ -53,7 +53,7 @@ export class AtxpService {
     }
   }
 
-  // Enhanced ATXP integration with format compatibility
+  // Pure ATXP integration - server now supports standard MCP format
   async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
     if (!this.atxpAvailable) {
       throw new Error("ATXP SDK not available - package not installed or import failed");
@@ -63,70 +63,30 @@ export class AtxpService {
       const { atxpClient } = await import('@atxp/client');
       const { ConsoleLogger, LogLevel } = await import('@atxp/common');
 
-      // Step 1: Try ATXP with authentication (this will handle payment authorization)
-      // but expect it to fail due to format mismatch
-      let atxpErrorDetails: string | undefined;
+      console.log(`Making ATXP call for ${toolName} with standard MCP format`);
       
-      try {
-        const mcpEndpoint = `${serverUrl}/mcp/call`;
-        const client = await atxpClient({
-          mcpServer: mcpEndpoint,
-          account: this.atxpAccount,
-          allowedAuthorizationServers: [
-            'https://auth.atxp.ai',
-            'https://atxp-accounts-staging.onrender.com/',
-            serverUrl
-          ],
-          logger: new ConsoleLogger({ level: LogLevel.DEBUG })
-        });
-
-        // This will likely fail due to format, but ATXP will have attempted auth
-        const result = await client.callTool({
-          name: toolName,
-          arguments: toolArguments,
-        });
-        
-        // If we get here, ATXP worked with standard format!
-        console.log(`ATXP call successful for ${toolName} with standard format`);
-        return result;
-      } catch (atxpError) {
-        // Capture the detailed error for debugging
-        atxpErrorDetails = atxpError instanceof Error ? atxpError.message : String(atxpError);
-        console.log(`ATXP authentication attempted, proceeding with direct call using server format`);
-        console.log(`ATXP Error Details: ${atxpErrorDetails}`);
-      }
-
-      // Step 2: Make direct HTTP call with correct format (server expects "tool" not "name")
-      console.log(`Making direct call with server-compatible format for ${toolName}`);
-      
-      const response = await fetch(`${serverUrl}/mcp/call`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Note: ATXP authentication tokens would go here if we could extract them
-        },
-        body: JSON.stringify({
-          tool: toolName,  // Use server's expected format
-          arguments: toolArguments
-        })
+      const mcpEndpoint = `${serverUrl}/mcp/call`;
+      const client = await atxpClient({
+        mcpServer: mcpEndpoint,
+        account: this.atxpAccount,
+        allowedAuthorizationServers: [
+          'https://auth.atxp.ai',
+          'https://atxp-accounts-staging.onrender.com/',
+          serverUrl
+        ],
+        logger: new ConsoleLogger({ level: LogLevel.DEBUG })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error POSTing to endpoint (HTTP ${response.status}): ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log(`Format-adapted call successful for ${toolName}`);
+      // Direct ATXP call with standard MCP format (server now supports this!)
+      const result = await client.callTool({
+        name: toolName,  // Standard MCP format
+        arguments: toolArguments,
+      });
       
-      // Mark this result as coming from format adapter (not real ATXP payment)
-      result.formatAdapterUsed = true;
-      result.atxpPaymentFailed = true;
-      result.atxpErrorDetails = atxpErrorDetails;
-      
+      console.log(`ATXP call successful for ${toolName}`);
       return result;
     } catch (error) {
-      console.error(`ATXP-compatible call failed for ${toolName}:`, error);
+      console.error(`ATXP call failed for ${toolName}:`, error);
       throw error;
     }
   }
@@ -204,27 +164,23 @@ export class AtxpService {
       cost: cost
     };
 
-    // Step 4: Payment Confirmation - show ATXP error or MCP server response
+    // Step 4: Payment Confirmation - pure ATXP integration
     let paymentStatus: 'success' | 'warning' | 'error';
     let paymentDetails: string;
     
     if (mcpResponse?.atxpError) {
-      // ATXP failed and we have the error message from mcp-client
-      paymentStatus = 'warning';
-      paymentDetails = mcpResponse.atxpError;
-    } else if (mcpResponse?.formatAdapterUsed || mcpResponse?.atxpPaymentFailed) {
-      // Format adapter was used, meaning ATXP failed and we bypassed payment
+      // ATXP failed with error from mcp-client fallback
       paymentStatus = 'error';
-      const errorDetails = mcpResponse?.atxpErrorDetails ? `\n\nTechnical Details: ${mcpResponse.atxpErrorDetails}` : '';
-      paymentDetails = `ATXP payment failed - operation completed without payment processing${errorDetails}`;
+      paymentDetails = mcpResponse.atxpError;
     } else if (!mcpSuccess) {
+      // Operation failed
       paymentStatus = 'error';
       paymentDetails = 'Payment not processed due to operation failure';
     } else {
-      // Only mark as success if ATXP actually worked (no format adapter used)
+      // ATXP succeeded with standard MCP format
       paymentStatus = 'success';
       paymentDetails = responseText 
-        ? `MCP Server Response: "${responseText}"`
+        ? `ATXP payment processed successfully. Response: "${responseText}"`
         : 'ATXP payment processed successfully';
     }
     
