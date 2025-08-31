@@ -76,6 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actualCost = Number(mcpResponse.cost) || 0;
       }
       
+      // No fallback - if payment fails, the entire operation should fail
+      
       // Create 5-step ATXP flow for user transparency
       const atxpFlow = atxpService.createAtxpFlow('list_agents', actualCost, mcpResponse);
       
