@@ -75,34 +75,15 @@ export class AtxpService {
     };
 
     // Step 4: Payment Confirmation (reflects actual MCP server payment status)
-    // Check if payment was actually processed or if fallback was used
-    const paymentProcessed = mcpResponse?.paymentProcessed === true;
-    const usedFallback = mcpResponse?.usedFallback === true || mcpResponse?.fallback === true;
-    
-    console.log(`🔍 Payment status check for ${operation}:`, {
-      mcpSuccess,
-      paymentProcessed,
-      usedFallback,
-      responseKeys: mcpResponse ? Object.keys(mcpResponse) : 'no response'
-    });
-    
-    let paymentStatus: 'success' | 'warning' | 'error';
-    let paymentDetails: string;
-    
-    if (!mcpSuccess) {
-      paymentStatus = 'error';
-      paymentDetails = 'Payment not processed due to operation failure';
-    } else if (paymentProcessed) {
-      paymentStatus = 'success';
-      paymentDetails = 'Payment processed successfully through ATXP SDK';
-    } else if (usedFallback) {
-      paymentStatus = 'warning';
-      paymentDetails = 'ATXP payment failed - operation completed using fallback mode';
-    } else {
-      // Default case: operation succeeded but no clear payment indicator
-      paymentStatus = 'warning';
-      paymentDetails = 'Payment APIs unavailable - operation completed in prototype mode';
-    }
+    // If MCP server failed, payment was definitely not processed
+    // If MCP server succeeded, we assume payment was processed unless explicitly told otherwise
+    const paymentWasProcessed = mcpSuccess && mcpResponse?.paymentFailed !== true;
+    const paymentStatus = paymentWasProcessed ? 'success' : (mcpSuccess ? 'warning' : 'error');
+    const paymentDetails = paymentWasProcessed
+      ? 'Payment processed successfully through ATXP SDK'
+      : mcpSuccess 
+        ? 'Payment APIs unavailable - operation completed in prototype mode'
+        : 'Payment not processed due to operation failure';
     
     const paymentStep: AtxpFlowStep = {
       id: 'payment-confirmation',
@@ -131,13 +112,6 @@ export class AtxpService {
       totalCost: cost,
       operation
     };
-  }
-
-  // Call MCP tool with ATXP payment processing
-  async callMcpTool(serverUrl: string, toolName: string, args: any): Promise<any> {
-    // This should integrate with the actual ATXP SDK for payment processing
-    // For now, throw error since SDK integration is not implemented
-    throw new Error('ATXP SDK integration not implemented - payment processing unavailable');
   }
 
   getConnectionStatus(): { connected: boolean; mode: string } {

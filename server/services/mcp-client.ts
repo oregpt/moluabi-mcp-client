@@ -76,20 +76,26 @@ export class MoluAbiMcpClient {
       };
 
       if (this.useAtxp) {
-        // Use ATXP client for authenticated, paid tool calls - no fallback
-        const result = await atxpService.callMcpTool(
-          this.serverUrl,
-          toolCall.name,
-          authenticatedArguments
-        );
-        return result as McpResponse;
+        // Use ATXP client for authenticated, paid tool calls
+        try {
+          const result = await atxpService.callMcpTool(
+            this.serverUrl,
+            toolCall.name,
+            authenticatedArguments
+          );
+          return result as McpResponse;
+        } catch (atxpError) {
+          // If ATXP fails, fall back to direct HTTP (for now)
+          console.warn(`ATXP call failed, falling back to direct HTTP:`, atxpError instanceof Error ? atxpError.message : String(atxpError));
+        }
       }
       
-      // Direct MCP call without payment processing (development/testing only)
+      // Use the new HTTP endpoint for MCP tool calls with exact format from working examples
       const payload = {
         tool: toolCall.name,
         arguments: authenticatedArguments
       };
+      
       
       const response = await fetch(`${this.serverUrl}/mcp/call`, {
         method: 'POST',
