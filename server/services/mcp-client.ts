@@ -77,45 +77,13 @@ export class MoluAbiMcpClient {
       };
 
       if (this.useAtxp) {
-        // Try ATXP first, but fallback to direct HTTP if ATXP has endpoint issues
-        try {
-          const result = await atxpService.callMcpTool(
-            this.serverUrl,
-            toolCall.name,
-            authenticatedArguments
-          );
-          return result as McpResponse;
-        } catch (atxpError) {
-          console.warn(`ATXP call failed (likely endpoint routing issue), falling back to direct HTTP: ${atxpError instanceof Error ? atxpError.message : String(atxpError)}`);
-          
-          // Fallback to direct HTTP call with the same authenticated arguments
-          const payload = {
-            name: toolCall.name,
-            arguments: authenticatedArguments
-          };
-          
-          const response = await fetch(`${this.serverUrl}/mcp/call`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
-          }
-
-          const result = await response.json();
-          
-          // Mark that this used fallback for monitoring purposes
-          if (result && typeof result === 'object') {
-            result.usedAtxpFallback = true;
-          }
-          
-          return result as McpResponse;
-        }
+        // Pure ATXP integration only
+        const result = await atxpService.callMcpTool(
+          this.serverUrl,
+          toolCall.name,
+          authenticatedArguments
+        );
+        return result as McpResponse;
       }
       
       // No fallback needed - if ATXP is disabled, we throw error
