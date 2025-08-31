@@ -81,14 +81,14 @@ export class AtxpService {
         });
 
         // This will likely fail due to format, but ATXP will have attempted auth
-        await client.callTool({
+        const result = await client.callTool({
           name: toolName,
           arguments: toolArguments,
         });
         
         // If we get here, ATXP worked with standard format!
         console.log(`ATXP call successful for ${toolName} with standard format`);
-        return;
+        return result;
       } catch (atxpError) {
         console.log(`ATXP authentication attempted, proceeding with direct call using server format`);
       }
@@ -115,6 +115,11 @@ export class AtxpService {
 
       const result = await response.json();
       console.log(`Format-adapted call successful for ${toolName}`);
+      
+      // Mark this result as coming from format adapter (not real ATXP payment)
+      result.formatAdapterUsed = true;
+      result.atxpPaymentFailed = true;
+      
       return result;
     } catch (error) {
       console.error(`ATXP-compatible call failed for ${toolName}:`, error);
@@ -200,16 +205,22 @@ export class AtxpService {
     let paymentDetails: string;
     
     if (mcpResponse?.atxpError) {
+      // ATXP failed and we have the error message from mcp-client
       paymentStatus = 'warning';
       paymentDetails = mcpResponse.atxpError;
+    } else if (mcpResponse?.formatAdapterUsed || mcpResponse?.atxpPaymentFailed) {
+      // Format adapter was used, meaning ATXP failed and we bypassed payment
+      paymentStatus = 'error';
+      paymentDetails = 'ATXP payment failed - operation completed without payment processing';
     } else if (!mcpSuccess) {
       paymentStatus = 'error';
       paymentDetails = 'Payment not processed due to operation failure';
     } else {
+      // Only mark as success if ATXP actually worked (no format adapter used)
       paymentStatus = 'success';
       paymentDetails = responseText 
         ? `MCP Server Response: "${responseText}"`
-        : 'No payment details in response - operation completed';
+        : 'ATXP payment processed successfully';
     }
     
     const paymentStep: AtxpFlowStep = {
