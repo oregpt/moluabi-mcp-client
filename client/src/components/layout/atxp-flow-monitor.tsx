@@ -176,7 +176,7 @@ export function AtxpFlowMonitor({ isVisible = true }: AtxpFlowMonitorProps) {
               ) : (
                 <>
                   <CreditCard className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">API Key</span>
+                  <span className="text-xs font-medium text-muted-foreground">Free</span>
                 </>
               )}
             </div>

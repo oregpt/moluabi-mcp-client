@@ -62,7 +62,7 @@ export function PaymentMethodToggle({ className }: PaymentMethodToggleProps) {
       <div className="flex items-center space-x-2">
         <CreditCard className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="payment-toggle" className="text-sm font-medium">
-          API Key
+          Free
         </Label>
       </div>
       
@@ -86,7 +86,7 @@ export function PaymentMethodToggle({ className }: PaymentMethodToggleProps) {
         className="ml-2"
         data-testid="payment-method-badge"
       >
-        {paymentMethod === 'atxp' ? 'Crypto Billing' : 'Account Billing'}
+        {paymentMethod === 'atxp' ? 'ATXP Billing' : 'Free Tier'}
       </Badge>
     </div>
   );

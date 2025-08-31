@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         paymentMethod: method,
-        message: `Payment method set to ${method === 'apikey' ? 'API Key (Account Billing)' : 'ATXP (Crypto Billing)'}`
+        message: `Payment method set to ${method === 'apikey' ? 'Free Tier' : 'ATXP Billing'}`
       });
     } catch (error) {
       console.error("Payment method change error:", error);
