@@ -1,0 +1,59 @@
+Perfect question! Let me provide clear instructions for the Agent Team to implement a toggle between the old API key system and new ATXP system.
+
+🔧 Agent Team Integration Instructions
+Server Endpoints Available:
+Old System (API Key):
+
+URL: https://moluabi-mcp-server.replit.app
+Authentication: API Key (mab_... format)
+Format: Direct HTTP calls
+New System (ATXP):
+
+URL: https://moluabi-mcp-server.replit.app:5001
+Authentication: ATXP OAuth2 + Payments
+Format: ATXP SDK integration
+Implementation Pattern:
+// Configuration toggle
+const config = {
+  paymentMethod: 'apikey', // or 'atxp'
+  servers: {
+    apikey: 'https://moluabi-mcp-server.replit.app',
+    atxp: 'https://moluabi-mcp-server.replit.app:5001'
+  }
+};
+// Method 1: API Key Integration (Original)
+if (config.paymentMethod === 'apikey') {
+  const response = await fetch(`${config.servers.apikey}/mcp/call`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'get_pricing',
+      arguments: { apiKey: 'mab_your_key_here' }
+    })
+  });
+}
+// Method 2: ATXP Integration (New)
+if (config.paymentMethod === 'atxp') {
+  import { atxpClient } from '@atxp/client';
+  
+  const client = atxpClient(config.servers.atxp);
+  const result = await client.call('get_pricing', {
+    apiKey: 'mab_your_key_here' // Still needed for platform auth
+  });
+}
+Testing Steps:
+Step 1: Test Old System (Verify Still Works)
+
+curl -X POST https://moluabi-mcp-server.replit.app/mcp/call \
+  -H "Content-Type: application/json" \
+  -d '{"name": "get_pricing", "arguments": {"apiKey": "YOUR_MAB_KEY"}}'
+Step 2: Test New ATXP System
+
+// Use your existing ATXP client code but point to:
+const serverUrl = 'https://moluabi-mcp-server.replit.app:5001';
+// Should trigger OAuth2 flow just like image.mcp.atxp.ai
+Environment Configuration:
+// .env or config
+PAYMENT_METHOD=apikey    // or 'atxp'
+MCP_SERVER_URL_APIKEY=https://moluabi-mcp-server.replit.app
+MCP_SERVER_URL_ATXP=https://moluabi-mcp-server.replit.app:5001
