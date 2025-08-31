@@ -95,17 +95,17 @@ export class MoluAbiMcpClient {
       };
 
       if (this.paymentMethod === 'atxp') {
-        // ATXP method: Use ATXP SDK with OAuth2 + crypto payments
-        console.log('Using ATXP payment method');
+        // ATXP method: Use /atxp endpoint with JSON-RPC 2.0 and ATXP SDK
+        console.log('Using ATXP payment method with /atxp endpoint');
         const result = await atxpService.callMcpTool(
-          this.atxpServerUrl,
+          `${this.apiKeyServerUrl}/atxp`,  // Use /atxp endpoint instead of separate port
           toolCall.name,
           authenticatedArguments
         );
         return result as McpResponse;
       } else {
-        // API Key method: Direct HTTP call with account billing
-        console.log('Using API key payment method');
+        // API Key method: Use /mcp/call endpoint with direct HTTP
+        console.log('Using API key payment method with /mcp/call endpoint');
         const response = await fetch(`${this.apiKeyServerUrl}/mcp/call`, {
           method: 'POST',
           headers: {
@@ -193,9 +193,9 @@ export class MoluAbiMcpClient {
         throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
       }
 
-      // Use get_pricing tool instead of /pricing endpoint to match working examples
-      const currentServerUrl = this.getCurrentServerUrl();
-      const response = await fetch(`${currentServerUrl}/mcp/call`, {
+      // Use get_pricing tool - route based on payment method
+      const endpoint = this.paymentMethod === 'atxp' ? `${this.apiKeyServerUrl}/atxp` : `${this.apiKeyServerUrl}/mcp/call`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

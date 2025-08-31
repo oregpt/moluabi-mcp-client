@@ -1,0 +1,63 @@
+🚀 MCP Server Integration Instructions
+Two Payment Methods Available
+You can now toggle between API Key billing and ATXP crypto payments by simply changing the endpoint URL:
+
+Method 1: API Key (Account Billing)
+const response = await fetch('https://moluabi-mcp-server.replit.app/mcp/call', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'list_agents',
+    arguments: { apiKey: 'mab_your_api_key' }
+  })
+});
+Method 2: ATXP (Crypto Payments)
+// First, get tools list (no auth required)
+const toolsResponse = await fetch('https://moluabi-mcp-server.replit.app/atxp', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'tools/list',
+    id: 'get-tools'
+  })
+});
+// Then, call tools with ATXP authentication
+const response = await fetch('https://moluabi-mcp-server.replit.app/atxp', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your_atxp_token'
+  },
+  body: JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'tools/call',
+    params: {
+      name: 'list_agents',
+      arguments: { apiKey: 'mab_your_api_key' }
+    },
+    id: 'call-tool'
+  })
+});
+Key Differences:
+API Key Method:
+
+✅ Account billing (existing flow)
+✅ Simple HTTP POST with tool name and arguments
+✅ Use your existing integration code
+ATXP Method:
+
+✅ Crypto wallet payments (USDC)
+✅ JSON-RPC 2.0 protocol
+✅ OAuth2 + payment authentication required
+✅ Same API key still needed for platform tool execution
+Testing Commands:
+# Test API Key method
+curl -X POST https://moluabi-mcp-server.replit.app/mcp/call \
+  -H "Content-Type: application/json" \
+  -d '{"name":"get_pricing","arguments":{"apiKey":"mab_your_key"}}'
+# Test ATXP method
+curl -X POST https://moluabi-mcp-server.replit.app/atxp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":"test"}'
+Both methods are live and ready for integration!
