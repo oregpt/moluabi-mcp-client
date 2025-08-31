@@ -88,43 +88,12 @@ export class AtxpService {
       cost: cost
     };
 
-    // Step 4: Payment Confirmation (reflects actual MCP server response content)
-    // First, check if there were any ATXP errors during the call
-    const hasAtxpErrors = mcpErrors && mcpErrors.length > 0;
-    
-    // Look at the actual words in the response to determine payment status
-    const paymentSuccessKeywords = responseText && (
-      responseText.toLowerCase().includes('payment processed') ||
-      responseText.toLowerCase().includes('transaction successful') ||
-      responseText.toLowerCase().includes('payment complete')
-    );
-    
-    const paymentFailureKeywords = responseText && (
-      responseText.toLowerCase().includes('payment failed') ||
-      responseText.toLowerCase().includes('payment declined') ||
-      responseText.toLowerCase().includes('insufficient funds') ||
-      responseText.toLowerCase().includes('payment error')
-    );
-    
-    let paymentStatus: 'success' | 'warning' | 'error';
-    let paymentDetails: string;
-    
-    if (!mcpSuccess) {
-      paymentStatus = 'error';
-      paymentDetails = 'Payment not processed due to operation failure';
-    } else if (hasAtxpErrors) {
-      paymentStatus = 'warning';
-      paymentDetails = `ATXP payment system unavailable: ${mcpErrors?.join(', ')}. Operation completed without payment processing.`;
-    } else if (paymentFailureKeywords) {
-      paymentStatus = 'error';
-      paymentDetails = `Payment failed: ${responseText}`;
-    } else if (paymentSuccessKeywords) {
-      paymentStatus = 'success';
-      paymentDetails = 'Payment processed successfully through ATXP SDK';
-    } else {
-      paymentStatus = 'warning';
-      paymentDetails = 'Payment status unclear from response - operation may be in prototype mode';
-    }
+    // Step 4: Payment Confirmation - show the exact MCP server response
+    // Since we got a 200 response, mark as success but show the actual message
+    const paymentStatus = mcpSuccess ? 'success' : 'error';
+    const paymentDetails = responseText 
+      ? `MCP Server Response: "${responseText}"`
+      : 'No payment details in response - operation completed';
     
     const paymentStep: AtxpFlowStep = {
       id: 'payment-confirmation',
