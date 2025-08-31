@@ -19,20 +19,72 @@ export interface AtxpFlowData {
 
 export class AtxpService {
   private initialized = false;
+  private atxpAvailable = false;
+  private atxpAccount: any = null;
 
   async initialize(): Promise<void> {
     try {
       const connectionString = process.env.ATXP_CONNECTION || process.env.ATXP_CONNECTION_STRING;
       
       if (!connectionString) {
-        console.warn("ATXP connection string not found - SDK-only mode");
+        console.warn("ATXP connection string not found - will fall back to direct HTTP");
+        this.initialized = true;
         return;
       }
 
+      // Try to load ATXP SDK
+      try {
+        const { ATXPAccount } = await import('@atxp/client');
+        this.atxpAccount = new ATXPAccount(connectionString, {
+          network: 'base',
+        });
+        this.atxpAvailable = true;
+        console.log("ATXP service initialized with SDK integration");
+      } catch (importError) {
+        console.warn("ATXP SDK not available - will fall back to direct HTTP:", importError instanceof Error ? importError.message : String(importError));
+        this.atxpAvailable = false;
+      }
+
       this.initialized = true;
-      console.log("ATXP service initialized for SDK-only integration");
     } catch (error) {
       console.error("Failed to initialize ATXP service:", error);
+      this.initialized = true; // Still mark as initialized to allow fallback
+      this.atxpAvailable = false;
+    }
+  }
+
+  // New function to handle MCP calls with ATXP payment or fallback
+  async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
+    if (!this.atxpAvailable) {
+      throw new Error("ATXP SDK not available - package not installed or import failed");
+    }
+
+    try {
+      const { atxpClient } = await import('@atxp/client');
+      const { ConsoleLogger, LogLevel } = await import('@atxp/common');
+
+      // Create ATXP client for this MCP server
+      const client = await atxpClient({
+        mcpServer: serverUrl,
+        account: this.atxpAccount,
+        allowedAuthorizationServers: [
+          'https://auth.atxp.ai',
+          'https://atxp-accounts-staging.onrender.com/',
+          serverUrl // Allow the MCP server itself as auth server
+        ],
+        logger: new ConsoleLogger({ level: LogLevel.DEBUG })
+      });
+
+      // Make ATXP-authenticated call
+      const result = await client.callTool({
+        name: toolName,
+        arguments: toolArguments,
+      });
+
+      console.log(`ATXP call successful for ${toolName}`);
+      return result;
+    } catch (error) {
+      console.error(`ATXP call failed for ${toolName}:`, error);
       throw error;
     }
   }
@@ -151,7 +203,7 @@ export class AtxpService {
   getConnectionStatus(): { connected: boolean; mode: string } {
     return {
       connected: this.initialized,
-      mode: 'SDK-only via MCP server'
+      mode: this.atxpAvailable ? 'ATXP SDK with fallback' : 'Direct HTTP (ATXP unavailable)'
     };
   }
 }
