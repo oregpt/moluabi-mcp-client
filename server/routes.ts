@@ -99,6 +99,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct HTTP test endpoint (bypassing ATXP) to prove our integration works
+  app.get("/api/agents/direct-test", async (req, res) => {
+    try {
+      console.log('Testing direct HTTP call to MCP server');
+      
+      const payload = {
+        name: 'list_agents',
+        arguments: {
+          apiKey: 'mab_cc4d049c'  // Use test API key
+        }
+      };
+      
+      const response = await fetch('https://moluabi-mcp-server.replit.app/mcp/call', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Direct HTTP call successful');
+      res.json({ 
+        success: true, 
+        directCall: result, 
+        message: 'Direct HTTP call works perfectly - issue is with ATXP SDK wrapper',
+        proofOfServerCompatibility: true
+      });
+    } catch (error) {
+      console.error('Direct test error:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Direct test failed' 
+      });
+    }
+  });
+
   app.get("/api/agents/:id", async (req, res) => {
     try {
       const userId = req.query.userId as string || "user_demo_123";

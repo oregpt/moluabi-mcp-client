@@ -77,9 +77,9 @@ export class AtxpService {
         logger: new ConsoleLogger({ level: LogLevel.DEBUG })
       });
 
-      // Direct ATXP call with standard MCP format (server now supports this!)
+      // Try standard MCP format - ATXP SDK should pass this through correctly
       const result = await client.callTool({
-        name: toolName,  // Standard MCP format
+        name: toolName,
         arguments: toolArguments,
       });
       
