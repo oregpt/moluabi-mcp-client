@@ -132,16 +132,24 @@ export class AtxpService {
       }
     }
     
-    // Look for failure keywords in the actual response text
-    const responseContainsError = responseText && (
-      responseText.toLowerCase().includes('error') ||
-      responseText.toLowerCase().includes('failed') ||
-      responseText.toLowerCase().includes('insufficient') ||
+    // Look for actual failure indicators - avoid false positives from JSON structure
+    const responseContainsActualError = responseText && (
+      responseText.toLowerCase().includes('error:') ||
+      responseText.toLowerCase().includes('failed:') ||
+      responseText.toLowerCase().includes('insufficient funds') ||
       responseText.toLowerCase().includes('payment declined') ||
-      responseText.toLowerCase().includes('authentication failed')
+      responseText.toLowerCase().includes('authentication failed') ||
+      responseText.toLowerCase().includes('unauthorized')
     );
     
-    const mcpSuccess = hasResponse && mcpResponse.success !== false && !responseContainsError;
+    // Check if response explicitly indicates success
+    const hasSuccessField = mcpResponse && (
+      mcpResponse.success === true ||
+      (mcpResponse.agents && mcpResponse.agents.success === true) ||
+      (mcpResponse.content && mcpResponse.content.length > 0)
+    );
+    
+    const mcpSuccess = hasResponse && (hasSuccessField || (!responseContainsActualError && mcpResponse.success !== false));
     
     const executionStep: AtxpFlowStep = {
       id: 'tool-execution-payment',
