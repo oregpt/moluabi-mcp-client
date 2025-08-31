@@ -1,5 +1,8 @@
-// Simplified ATXP Service - SDK-Only Architecture
+// Simplified ATXP Service - SDK-Only Architecture matching working implementation
 // All payment processing is handled by MCP server through ATXP SDK
+
+import { atxpClient, ATXPAccount } from '@atxp/client';
+import { ConsoleLogger, LogLevel } from '@atxp/common';
 
 export interface AtxpFlowStep {
   id: string;
@@ -20,7 +23,7 @@ export interface AtxpFlowData {
 export class AtxpService {
   private initialized = false;
   private atxpAvailable = false;
-  private atxpAccount: any = null;
+  private atxpAccount: ATXPAccount | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -32,21 +35,21 @@ export class AtxpService {
         return;
       }
 
-      // Try to load ATXP SDK
+      // Initialize ATXP account exactly like working implementation
       try {
-        const { ATXPAccount } = await import('@atxp/client');
-        
         // Debug log the connection string format like your working code
         console.log('ATXP_CONNECTION_STRING:', connectionString ? '*** (set)' : 'not set');
+        console.log('Initializing ATXPAccount...');
         
+        // Create account directly without dynamic import (matches working code)
         this.atxpAccount = new ATXPAccount(connectionString, {
           network: 'base',
         });
         this.atxpAvailable = true;
         console.log("ATXP service initialized with SDK integration");
         console.log('ATXPAccount initialized successfully');
-      } catch (importError) {
-        console.warn("ATXP SDK not available - will fall back to direct HTTP:", importError instanceof Error ? importError.message : String(importError));
+      } catch (initError) {
+        console.warn("ATXP SDK initialization failed:", initError instanceof Error ? initError.message : String(initError));
         this.atxpAvailable = false;
       }
 
@@ -58,31 +61,28 @@ export class AtxpService {
     }
   }
 
-  // Pure ATXP integration - server now supports standard MCP format
+  // Pure ATXP integration matching working implementation exactly
   async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
-    if (!this.atxpAvailable) {
+    if (!this.atxpAvailable || !this.atxpAccount) {
       throw new Error("ATXP SDK not available - package not installed or import failed");
     }
 
     try {
-      const { atxpClient } = await import('@atxp/client');
-      const { ConsoleLogger, LogLevel } = await import('@atxp/common');
-
-      console.log(`Making ATXP call for ${toolName} with corrected ATXP client setup`);
+      console.log(`Making ATXP call for ${toolName} with working implementation pattern`);
       
-      // The ATXP SDK expects the full MCP endpoint URL, not just the base server
+      // Create client exactly like working implementation
       const client = await atxpClient({
-        mcpServer: `${serverUrl}/mcp/call`,
-        account: this.atxpAccount,
+        mcpServer: serverUrl,  // Use base server URL like working code
+        account: this.atxpAccount,  // Direct account reference
         allowedAuthorizationServers: [
+          'http://localhost:5000',  // Add our local server first
           'https://auth.atxp.ai', 
-          'https://atxp-accounts-staging.onrender.com/',
-          'http://localhost:5000'  // Add our local server
+          'https://atxp-accounts-staging.onrender.com/'
         ],
         logger: new ConsoleLogger({ level: LogLevel.DEBUG })
       });
 
-      // Use standard MCP format
+      // Use standard MCP format exactly like working implementation
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
