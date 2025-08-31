@@ -61,62 +61,46 @@ export class AtxpService {
     }
   }
 
-  // Direct HTTP call to ATXP endpoint (bypassing SDK for now)
+  // ATXP SDK integration for MCP server communication
   async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
+    if (!this.atxpAvailable || !this.atxpAccount) {
+      throw new Error("ATXP SDK not available - package not installed or import failed");
+    }
+
     try {
-      console.log(`Making direct ATXP call for ${toolName} to /atxp endpoint`);
+      console.log(`Making ATXP SDK call for ${toolName}`);
       console.log('Server URL:', serverUrl);
       console.log('Tool Name:', toolName);
       console.log('Tool Arguments:', JSON.stringify(toolArguments, null, 2));
       
-      // Use direct HTTP call with JSON-RPC format that we know works
-      const jsonRpcPayload = {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: {
-          name: toolName,
-          arguments: toolArguments
-        },
-        id: Math.floor(Math.random() * 10000)
-      };
-
-      console.log('🔍 ATXP JSON-RPC payload:', JSON.stringify(jsonRpcPayload, null, 2));
-
-      const response = await fetch(serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonRpcPayload)
+      // Create ATXP client with proper configuration for MoluAbi server
+      const client = await atxpClient({
+        mcpServer: serverUrl,
+        account: this.atxpAccount,
+        allowedAuthorizationServers: [
+          'http://localhost:3001',
+          'https://auth.atxp.ai', 
+          'https://atxp-accounts-staging.onrender.com/'
+        ]
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`ATXP server responded with status ${response.status}: ${errorText}`);
-      }
+      console.log('ATXP client created successfully');
 
-      const result = await response.json();
-      console.log('🔍 ATXP response:', JSON.stringify(result, null, 2));
+      // Call the tool using ATXP SDK
+      const result = await client.callTool({
+        name: toolName,
+        arguments: toolArguments,
+      });
       
-      // Check for JSON-RPC error
-      if (result.error) {
-        throw new Error(`ATXP JSON-RPC error: ${result.error.message || result.error}`);
-      }
-
-      // Return the result content in the expected format
-      if (result.result) {
-        console.log(`ATXP call successful for ${toolName}`);
-        return result.result;
-      }
-
-      throw new Error('Invalid ATXP response format');
+      console.log(`ATXP call successful for ${toolName}:`, result);
+      return result;
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
       
       // Check if this is the specific endpoint routing issue
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('Cannot POST /') || errorMessage.includes('HTTP 404')) {
-        console.log('ATXP endpoint routing issue detected - MCP server needs root endpoint configuration');
+      if (errorMessage.includes('Cannot POST /') || errorMessage.includes('HTTP 404') || errorMessage.includes('Method not found: initialize')) {
+        console.log('ATXP endpoint compatibility issue detected - server may not support ATXP SDK protocol');
         // Re-throw with a more specific message for the mcp-client fallback logic
         throw new Error(`ATXP endpoint routing issue: ${errorMessage}`);
       }
