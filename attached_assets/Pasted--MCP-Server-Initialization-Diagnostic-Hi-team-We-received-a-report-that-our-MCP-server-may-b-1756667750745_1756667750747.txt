@@ -1,0 +1,125 @@
+# MCP Server Initialization Diagnostic
+
+Hi team,
+
+We received a report that our MCP server may be missing the `initialize` method when someone tried to integrate it with ATXP. I need you to check our server implementation and verify several key components are properly implemented.
+
+## Primary Issue: Missing Initialize Method
+
+**Question 1:** Does our MCP server properly handle the `initialize` request/method?
+- Check if we have an initialization handler that responds to the MCP client's initial handshake
+- This should be automatically handled if we're using the official MCP SDK, but please verify
+
+**If missing:** The initialize method is critical for MCP protocol compliance. It establishes the session and tells the client what capabilities our server supports.
+
+## Session Management Requirements
+
+**Question 2:** Do we properly implement session management?
+- Do we generate and return a session ID in the `Mcp-Session-Id` HTTP header during initialization?
+- Do we validate this session ID on subsequent requests?
+- Do we return a 404 when a session expires to trigger re-initialization?
+
+**If missing:** Implement session tracking using an in-memory store (Map/object) that associates session IDs with client connections.
+
+## Transport Configuration
+
+**Question 3:** What transport method(s) does our server support?
+- [ ] STDIO (for local servers)
+- [ ] HTTP/Streamable HTTP (for remote servers) 
+- [ ] SSE (legacy, being deprecated)
+
+**Verify:** Our server should match the transport method that ATXP expects to use.
+
+## Core MCP Protocol Implementation
+
+**Question 4:** Please verify we properly implement these core MCP methods:
+- [ ] `initialize` - Initial handshake and capability exchange
+- [ ] `list_tools` - Return available tools
+- [ ] `list_resources` - Return available resources (if we have any)
+- [ ] `list_prompts` - Return available prompts (if we have any)
+- [ ] `call_tool` - Execute tool requests
+- [ ] `read_resource` - Serve resource content (if applicable)
+
+## Server Metadata and Capabilities
+
+**Question 5:** Do we properly declare our server metadata during initialization?
+```json
+{
+  "name": "our-server-name",
+  "version": "1.0.0",
+  "capabilities": {
+    "tools": {},
+    "resources": {},
+    "prompts": {}
+  }
+}
+```
+
+## Error Handling
+
+**Question 6:** Do we implement proper error responses?
+- JSON-RPC compliant error format
+- Proper error codes for different failure scenarios
+- Include the original request ID in error responses
+
+## Additional Verification Steps
+
+**Question 7:** Can you test our server with MCP Inspector?
+```bash
+# Install MCP CLI tools
+uv add "mcp[cli]"
+
+# Test our server
+mcp dev path/to/our/server.py
+```
+This will show if initialization and other protocol methods work correctly.
+
+**Question 8:** Are we using the official MCP SDK?
+- Python: `@modelcontextprotocol/sdk` or `mcp[cli]`
+- TypeScript: `@modelcontextprotocol/sdk`
+- C#: Microsoft's MCP SDK
+
+If yes, these should handle initialization automatically. If no, we may need to implement the protocol manually.
+
+## Expected Server Structure
+
+For reference, a properly initialized MCP server should look something like this:
+
+**Python (FastMCP):**
+```python
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("our-server-name")
+
+@mcp.tool()
+def our_tool(param: str) -> str:
+    """Tool description"""
+    return f"Result: {param}"
+
+if __name__ == "__main__":
+    mcp.run(transport='stdio')  # or 'http'
+```
+
+**TypeScript:**
+```typescript
+const server = new McpServer({
+  name: "our-server-name",
+  version: "1.0.0"
+});
+
+// Tool registrations...
+
+server.connect(transport);
+```
+
+## Action Items
+
+1. **Immediate:** Check if `initialize` method exists and responds correctly
+2. **Verify:** All core MCP methods are implemented  
+3. **Test:** Run MCP Inspector to validate protocol compliance
+4. **Document:** What transport method(s) we support
+5. **Confirm:** Session management is working properly
+
+Please let me know your findings for each question, and we can troubleshoot any missing pieces together.
+
+Thanks!
