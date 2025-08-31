@@ -83,9 +83,9 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      const apiKey = process.env.MOLUABI_API_KEY;
       if (!apiKey) {
-        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+        throw new Error('MOLUABI_API_KEY not found in environment variables');
       }
 
       // Add API key to arguments for authentication
@@ -156,9 +156,9 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      const apiKey = process.env.MOLUABI_API_KEY;
       if (!apiKey) {
-        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+        throw new Error('MOLUABI_API_KEY not found in environment variables');
       }
 
       // Use the new HTTP endpoint to list available tools
@@ -188,9 +188,9 @@ export class MoluAbiMcpClient {
     }
 
     try {
-      const apiKey = process.env.MOLUABI_MCP_API_KEY;
+      const apiKey = process.env.MOLUABI_API_KEY;
       if (!apiKey) {
-        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
+        throw new Error('MOLUABI_API_KEY not found in environment variables');
       }
 
       // Use get_pricing tool - route based on payment method
