@@ -70,7 +70,7 @@ export class AtxpService {
     try {
       console.log(`Making ATXP call for ${toolName} with working implementation pattern`);
       
-      // Create client exactly like working implementation
+      // Create client exactly like working implementation - try without logger first
       const client = await atxpClient({
         mcpServer: serverUrl,  // Use base server URL like working code
         account: this.atxpAccount,  // Direct account reference
@@ -78,8 +78,8 @@ export class AtxpService {
           'http://localhost:5000',  // Add our local server first
           'https://auth.atxp.ai', 
           'https://atxp-accounts-staging.onrender.com/'
-        ],
-        logger: new ConsoleLogger({ level: LogLevel.DEBUG })
+        ]
+        // NO logger - match filestore implementation pattern
       });
 
       // Use standard MCP format exactly like working implementation

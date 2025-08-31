@@ -67,7 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "list_agents",
-        arguments: {}
+        arguments: {
+          apiKey: "mab_cc4d049c"  // Include API key like working implementation
+        }
       });
       
       // Extract cost from MCP response
