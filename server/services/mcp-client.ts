@@ -12,6 +12,7 @@ export interface McpResponse {
     type: string;
     text: string;
   }>;
+  atxpError?: string; // Capture ATXP errors for transparency
 }
 
 export class MoluAbiMcpClient {
@@ -75,6 +76,8 @@ export class MoluAbiMcpClient {
         ...toolCall.arguments
       };
 
+      let atxpErrorMessage: string | undefined;
+      
       if (this.useAtxp) {
         // Use ATXP client for authenticated, paid tool calls
         try {
@@ -85,8 +88,9 @@ export class MoluAbiMcpClient {
           );
           return result as McpResponse;
         } catch (atxpError) {
-          // If ATXP fails, fall back to direct HTTP (for now)
-          console.warn(`ATXP call failed, falling back to direct HTTP:`, atxpError instanceof Error ? atxpError.message : String(atxpError));
+          // Capture the ATXP error message for display in payment flow
+          atxpErrorMessage = `ATXP call failed, falling back to direct HTTP: ${atxpError instanceof Error ? atxpError.message : String(atxpError)}`;
+          console.warn(atxpErrorMessage);
         }
       }
       
@@ -111,6 +115,12 @@ export class MoluAbiMcpClient {
       }
 
       const result = await response.json();
+      
+      // Include ATXP error if it occurred
+      if (atxpErrorMessage) {
+        result.atxpError = atxpErrorMessage;
+      }
+      
       return result as McpResponse;
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);

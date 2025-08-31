@@ -102,12 +102,22 @@ export class AtxpService {
       cost: cost
     };
 
-    // Step 4: Payment Confirmation - show the exact MCP server response
-    // Since we got a 200 response, mark as success but show the actual message
-    const paymentStatus = mcpSuccess ? 'success' : 'error';
-    const paymentDetails = responseText 
-      ? `MCP Server Response: "${responseText}"`
-      : 'No payment details in response - operation completed';
+    // Step 4: Payment Confirmation - show ATXP error or MCP server response
+    let paymentStatus: 'success' | 'warning' | 'error';
+    let paymentDetails: string;
+    
+    if (mcpResponse?.atxpError) {
+      paymentStatus = 'warning';
+      paymentDetails = mcpResponse.atxpError;
+    } else if (!mcpSuccess) {
+      paymentStatus = 'error';
+      paymentDetails = 'Payment not processed due to operation failure';
+    } else {
+      paymentStatus = 'success';
+      paymentDetails = responseText 
+        ? `MCP Server Response: "${responseText}"`
+        : 'No payment details in response - operation completed';
+    }
     
     const paymentStep: AtxpFlowStep = {
       id: 'payment-confirmation',
