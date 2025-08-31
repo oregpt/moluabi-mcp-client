@@ -63,27 +63,41 @@ export class AtxpService {
       const { atxpClient } = await import('@atxp/client');
       const { ConsoleLogger, LogLevel } = await import('@atxp/common');
 
-      // Create ATXP client for this MCP server - use correct MCP endpoint
-      const mcpEndpoint = `${serverUrl}/mcp/call`;
-      const client = await atxpClient({
-        mcpServer: mcpEndpoint,
-        account: this.atxpAccount,
-        allowedAuthorizationServers: [
-          'https://auth.atxp.ai',
-          'https://atxp-accounts-staging.onrender.com/',
-          serverUrl // Allow the MCP server itself as auth server
-        ],
-        logger: new ConsoleLogger({ level: LogLevel.DEBUG })
-      });
+      // Since this MCP server uses non-standard format {"tool": "..."} instead of {"name": "..."},
+      // we need to create a custom transport that translates ATXP's standard format
+      // to this server's custom format before sending.
+      
+      // Option 1: Try standard ATXP first (in case server gets updated to standard format)
+      try {
+        const mcpEndpoint = `${serverUrl}/mcp/call`;
+        const client = await atxpClient({
+          mcpServer: mcpEndpoint,
+          account: this.atxpAccount,
+          allowedAuthorizationServers: [
+            'https://auth.atxp.ai',
+            'https://atxp-accounts-staging.onrender.com/',
+            serverUrl // Allow the MCP server itself as auth server
+          ],
+          logger: new ConsoleLogger({ level: LogLevel.DEBUG })
+        });
 
-      // Make ATXP-authenticated call
-      const result = await client.callTool({
-        name: toolName,
-        arguments: toolArguments,
-      });
+        // Make ATXP-authenticated call with standard format
+        const result = await client.callTool({
+          name: toolName,
+          arguments: toolArguments,
+        });
 
-      console.log(`ATXP call successful for ${toolName}`);
-      return result;
+        console.log(`ATXP call successful for ${toolName}`);
+        return result;
+      } catch (standardError) {
+        // If standard format fails, check if it's the parameter format issue
+        if (standardError instanceof Error && standardError.message.includes('Missing tool parameter')) {
+          console.log(`ATXP standard format failed (${standardError.message}), server uses custom format`);
+          throw new Error(`MCP server uses non-standard format incompatible with ATXP: ${standardError.message}`);
+        }
+        // Re-throw other errors
+        throw standardError;
+      }
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
       throw error;
