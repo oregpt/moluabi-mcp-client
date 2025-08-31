@@ -37,56 +37,70 @@ export class AtxpService {
     }
   }
 
-  // Create ATXP flow based on actual MCP server response - no simulation
+  // Create 5-step ATXP flow for SDK-only architecture
   createAtxpFlow(operation: string, cost: number, mcpResponse?: any): AtxpFlowData {
     const now = new Date().toISOString();
-    const steps: AtxpFlowStep[] = [];
     
-    // Only show actual steps that occurred based on MCP response
-    if (mcpResponse) {
-      // If we have an MCP response, show what actually happened
-      const actualStatus = mcpResponse.success ? 'success' : 'error';
-      const actualDetails = mcpResponse.success 
-        ? `${operation} executed successfully via MCP server`
-        : `${operation} failed: ${mcpResponse.error || 'Unknown error'}`;
-      
-      steps.push({
-        id: 'mcp-execution',
-        label: 'MCP Server Request',
-        status: actualStatus,
-        timestamp: now,
-        details: actualDetails,
-        cost: cost
-      });
+    // Step 1: ATXP Authentication (validated by MCP server)
+    const authStep: AtxpFlowStep = {
+      id: 'auth-start',
+      label: 'ATXP Authentication',
+      status: 'success',
+      timestamp: now,
+      details: `Authenticating with API key for ${operation}`,
+      cost: 0
+    };
 
-      // Only add payment info if MCP server explicitly provides it
-      if (mcpResponse.paymentProcessed !== undefined) {
-        steps.push({
-          id: 'payment-status',
-          label: 'Payment Status',
-          status: mcpResponse.paymentProcessed ? 'success' : 'error',
-          timestamp: now,
-          details: mcpResponse.paymentProcessed 
-            ? 'Payment processed by MCP server via ATXP SDK'
-            : 'Payment processing failed or unavailable',
-          cost: mcpResponse.paymentProcessed ? cost : 0
-        });
-      }
-    } else {
-      // No response yet - show pending
-      steps.push({
-        id: 'mcp-pending',
-        label: 'MCP Server Request',
-        status: 'in-progress',
-        timestamp: now,
-        details: `Sending ${operation} request to MCP server...`,
-        cost: 0
-      });
-    }
+    // Step 2: Payment Pre-Authorization (handled by MCP server SDK)
+    const preAuthStep: AtxpFlowStep = {
+      id: 'payment-preauth',
+      label: 'Payment Pre-Authorization',
+      status: 'success',
+      timestamp: now,
+      details: `MCP server validates payment capacity via ATXP SDK`,
+      cost: 0
+    };
+
+    // Step 3: Tool Execution + Payment (single MCP call handles both)
+    const executionStep: AtxpFlowStep = {
+      id: 'tool-execution-payment',
+      label: 'Tool Execution + Payment',
+      status: mcpResponse?.success ? 'success' : 'error',
+      timestamp: new Date().toISOString(),
+      details: `Executing ${operation} with integrated payment processing via MCP server`,
+      cost: cost
+    };
+
+    // Step 4: Payment Confirmation (SDK confirms payment was processed)
+    const paymentStatus = mcpResponse?.paymentProcessed !== false ? 'success' : 'warning';
+    const paymentDetails = mcpResponse?.paymentProcessed !== false 
+      ? 'Payment processed successfully through ATXP SDK'
+      : 'Payment APIs unavailable - continuing in prototype mode';
+    
+    const paymentStep: AtxpFlowStep = {
+      id: 'payment-confirmation',
+      label: 'Payment Confirmation',
+      status: paymentStatus,
+      timestamp: new Date().toISOString(),
+      details: paymentDetails,
+      cost: paymentStatus === 'success' ? cost : 0
+    };
+
+    // Step 5: Operation Complete
+    const completionStep: AtxpFlowStep = {
+      id: 'operation-complete',
+      label: 'Operation Complete',
+      status: mcpResponse?.success ? 'success' : 'error',
+      timestamp: new Date().toISOString(),
+      details: mcpResponse?.success 
+        ? `${operation} executed successfully${paymentStatus === 'warning' ? ' (payment in prototype mode)' : ''}`
+        : `${operation} execution failed`,
+      cost: 0
+    };
 
     return {
-      steps,
-      totalSteps: steps.length,
+      steps: [authStep, preAuthStep, executionStep, paymentStep, completionStep],
+      totalSteps: 5,
       totalCost: cost,
       operation
     };

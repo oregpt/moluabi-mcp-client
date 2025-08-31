@@ -75,8 +75,20 @@ export class MoluAbiMcpClient {
         ...toolCall.arguments
       };
 
-      // Note: ATXP integration is handled by MCP server
-      // We make direct HTTP calls to MCP server which internally uses ATXP SDK
+      if (this.useAtxp) {
+        // Use ATXP client for authenticated, paid tool calls
+        try {
+          const result = await atxpService.callMcpTool(
+            this.serverUrl,
+            toolCall.name,
+            authenticatedArguments
+          );
+          return result as McpResponse;
+        } catch (atxpError) {
+          // If ATXP fails, fall back to direct HTTP (for now)
+          console.warn(`ATXP call failed, falling back to direct HTTP:`, atxpError instanceof Error ? atxpError.message : String(atxpError));
+        }
+      }
       
       // Use the new HTTP endpoint for MCP tool calls with exact format from working examples
       const payload = {
@@ -154,43 +166,6 @@ export class MoluAbiMcpClient {
     } catch (error) {
       console.error("Failed to list MCP tools:", error);
       throw error;
-    }
-  }
-
-  async getBalance(): Promise<any> {
-    if (!this.client) {
-      throw new Error("MCP client not connected");
-    }
-
-    try {
-      const apiKey = process.env.MOLUABI_MCP_API_KEY;
-      if (!apiKey) {
-        throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
-      }
-
-      // Try to get balance from MCP server
-      const response = await fetch(`${this.serverUrl}/balance`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get balance: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Failed to get balance from MCP server:", error);
-      // Return indication that balance is managed by MCP server but not accessible
-      return { 
-        balance: "Managed by MCP Server via SDK", 
-        available: false,
-        error: error instanceof Error ? error.message : "Unknown error"
-      };
     }
   }
 

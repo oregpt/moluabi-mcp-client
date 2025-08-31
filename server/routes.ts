@@ -385,23 +385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const status = atxpService.getConnectionStatus();
       
-      // Try to get balance from MCP server
-      let balanceInfo;
-      try {
-        balanceInfo = await mcpClient.getBalance();
-      } catch (error) {
-        balanceInfo = { 
-          balance: "Managed by MCP Server via SDK", 
-          available: false,
-          error: error instanceof Error ? error.message : "Unknown error"
-        };
-      }
-      
       res.json({
         ...status,
-        balance: balanceInfo.balance,
-        balanceAvailable: balanceInfo.available,
-        balanceError: balanceInfo.error
+        balance: 'Managed by MCP server via SDK'
       });
     } catch (error) {
       console.error("ATXP status error:", error);
