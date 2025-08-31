@@ -15,26 +15,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to initialize services:", error);
   }
 
-  // Agent management routes - use MCP server
+  // Agent management routes - SDK-only MCP server integration
   app.post("/api/agents", async (req, res) => {
     try {
       const userId = req.body.userId || "user_demo_123";
       
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "create_agent",
-        cost: 0.005
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-      
-      // Call MCP server to create agent
+      // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "create_agent",
         arguments: {
@@ -45,43 +31,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // Extract cost and agent data from MCP response
+      // Extract cost from MCP response
       let actualCost = 0;
-      let agentData = null;
-      
-      if (mcpResponse && typeof mcpResponse === 'object') {
-        if ('cost' in mcpResponse) actualCost = mcpResponse.cost || 0;
-        if ('agent' in mcpResponse) agentData = mcpResponse.agent;
+      if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
+        actualCost = Number(mcpResponse.cost) || 0;
       }
       
-      // Process payment (this adds execution and payment steps)
-      await atxpService.processPayment({
-        userId,
-        toolName: "create_agent",
-        cost: actualCost
-      });
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('create_agent', actualCost, mcpResponse);
       
       // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "create_agent",
         cost: actualCost.toString(),
-        status: "success",
+        status: (mcpResponse as any)?.success !== false ? "success" : "error",
         request: req.body,
         response: mcpResponse,
       });
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-
       res.status(201).json({
         ...mcpResponse,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'create_agent'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("Create agent error:", error);
@@ -93,21 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || "user_demo_123";
       
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "list_agents",
-        cost: 0.001
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-      
-      // Call MCP server to list agents
+      // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "list_agents",
         arguments: {}
@@ -116,38 +73,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract cost from MCP response
       let actualCost = 0;
       if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+        actualCost = Number(mcpResponse.cost) || 0;
       }
       
-      // Process payment (this adds execution and payment steps)
-      await atxpService.processPayment({
-        userId,
-        toolName: "list_agents",
-        cost: actualCost
-      });
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('list_agents', actualCost, mcpResponse);
       
       // Record tool usage with actual cost
       await storage.recordToolUsage({
         userId,
         toolName: "list_agents",
         cost: actualCost.toString(),
-        status: "success",
+        status: (mcpResponse as any)?.success !== false ? "success" : "error",
         request: { userId },
         response: mcpResponse,
       });
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-      
-      // Include comprehensive ATXP flow data in response
       res.json({
         ...mcpResponse,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'list_agents'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("List agents error:", error);
@@ -160,21 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "get_agent",
-        cost: 0.001
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-      
-      // Call MCP server to get agent
+      // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "get_agent",
         arguments: { agentId }
@@ -183,15 +113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract cost from MCP response
       let actualCost = 0;
       if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+        actualCost = Number(mcpResponse.cost) || 0;
       }
 
-      // Process payment (this adds execution and payment steps)
-      await atxpService.processPayment({
-        userId,
-        toolName: "get_agent",
-        cost: actualCost
-      });
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('get_agent', actualCost, mcpResponse);
 
       // Record tool usage with actual cost
       await storage.recordToolUsage({
@@ -199,22 +125,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         toolName: "get_agent",
         agentId,
         cost: actualCost.toString(),
-        status: "success",
+        status: (mcpResponse as any)?.success !== false ? "success" : "error",
         request: { agentId, userId },
         response: mcpResponse,
       });
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-
       res.json({
         ...mcpResponse,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'get_agent'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("Get agent error:", error);
@@ -227,21 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.body.userId || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "update_agent",
-        cost: 0.003
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-      
-      // Call MCP server to update agent
+      // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "update_agent",
         arguments: {
@@ -255,15 +159,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract cost from MCP response
       let actualCost = 0;
       if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+        actualCost = Number(mcpResponse.cost) || 0;
       }
 
-      // Process payment (this adds execution and payment steps)
-      await atxpService.processPayment({
-        userId,
-        toolName: "update_agent",
-        cost: actualCost
-      });
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('update_agent', actualCost, mcpResponse);
 
       // Record tool usage with actual cost
       await storage.recordToolUsage({
@@ -271,22 +171,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         toolName: "update_agent",
         agentId,
         cost: actualCost.toString(),
-        status: "success",
+        status: (mcpResponse as any)?.success !== false ? "success" : "error",
         request: { agentId, updates: req.body },
         response: mcpResponse,
       });
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-
       res.json({
         ...mcpResponse,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'update_agent'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("Update agent error:", error);
@@ -299,21 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId as string || "user_demo_123";
       const agentId = parseInt(req.params.id);
       
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "delete_agent",
-        cost: 0.002
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-      
-      // Call MCP server to delete agent
+      // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "delete_agent",
         arguments: { agentId }
@@ -322,15 +200,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract cost from MCP response
       let actualCost = 0;
       if (mcpResponse && typeof mcpResponse === 'object' && 'cost' in mcpResponse) {
-        actualCost = mcpResponse.cost || 0;
+        actualCost = Number(mcpResponse.cost) || 0;
       }
 
-      // Process payment (this adds execution and payment steps)
-      await atxpService.processPayment({
-        userId,
-        toolName: "delete_agent",
-        cost: actualCost
-      });
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('delete_agent', actualCost, mcpResponse);
 
       // Record tool usage with actual cost
       await storage.recordToolUsage({
@@ -338,22 +212,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         toolName: "delete_agent",
         agentId,
         cost: actualCost.toString(),
-        status: "success",
+        status: (mcpResponse as any)?.success !== false ? "success" : "error",
         request: { agentId, userId },
         response: mcpResponse,
       });
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-
       res.json({
         ...mcpResponse,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'delete_agent'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("Delete agent error:", error);
@@ -361,27 +227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // MCP tool execution routes
+  // MCP tool execution routes - SDK-only integration
   app.post("/api/mcp/tools/:toolName", async (req, res) => {
     try {
       const { toolName } = req.params;
       const userId = req.body.userId || "user_demo_123";
-      
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment first (this builds the authentication and validation steps)
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName,
-        cost: 0.002 // Standard MCP tool cost
-      });
-      
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
 
-      // Call MCP tool
+      // Call MCP tool directly - it handles all payment processing via ATXP SDK
       const startTime = Date.now();
       let mcpResponse;
       let status = "success";
@@ -414,14 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const executionTime = Date.now() - startTime;
 
-      // Process payment (this adds execution and payment steps)
-      if (status === "success") {
-        await atxpService.processPayment({
-          userId,
-          toolName,
-          cost: actualCost,
-        });
-      }
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow(toolName, actualCost, mcpResponse);
 
       // Record usage with actual cost
       await storage.recordToolUsage({
@@ -445,17 +291,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? { ...mcpResponse, executionTime }
         : { success: true, response: mcpResponse, cost: actualCost, executionTime };
       
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-      
       res.json({
         ...responseData,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: toolName
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("MCP tool execution error:", error);
@@ -487,26 +325,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current pricing from MCP server
+  // Get current pricing from MCP server - SDK-only integration
   app.get("/api/pricing", async (req, res) => {
     try {
       const userId = req.query.userId as string || "user_demo_123";
-      
-      // Clear previous flow steps
-      (global as any).currentAtxpSteps = [];
-      
-      // Validate payment for get_pricing tool - use expected cost
-      const paymentValid = await atxpService.validatePayment({
-        userId,
-        toolName: "get_pricing",
-        cost: 0.001, // Standard get_pricing cost from MCP response
-      });
 
-      if (!paymentValid) {
-        return res.status(402).json({ error: "Payment validation failed" });
-      }
-
-      // Get pricing directly from MCP server
+      // Get pricing directly from MCP server - it handles payment via ATXP SDK
       const startTime = Date.now();
       let pricingData;
       let status = "success";
@@ -521,19 +345,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const executionTime = Date.now() - startTime;
+      const actualCost = pricingData?.cost || 0.001;
 
-      // Process payment if successful - use actual or expected cost
-      if (status === "success") {
-        const actualCost = pricingData?.cost || 0.001;
-        await atxpService.processPayment({
-          userId,
-          toolName: "get_pricing",
-          cost: actualCost,
-        });
-      }
+      // Create 5-step ATXP flow for user transparency
+      const atxpFlow = atxpService.createAtxpFlow('get_pricing', actualCost, pricingData ? { success: true } : { success: false });
 
       // Record usage - use actual or expected cost
-      const actualCost = pricingData?.cost || 0.001;
       await storage.recordToolUsage({
         userId,
         toolName: "get_pricing",
@@ -550,20 +367,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: errorMessage });
       }
 
-      // Get all accumulated ATXP steps from the service
-      const allSteps = (global as any).currentAtxpSteps || [];
-
       res.json({
         success: true,
         pricing: pricingData,
         cost: actualCost, // Use actual cost from MCP response
         executionTime,
-        atxpFlow: {
-          steps: allSteps,
-          totalSteps: allSteps.length,
-          totalCost: actualCost,
-          operation: 'get_pricing'
-        }
+        atxpFlow
       });
     } catch (error) {
       console.error("Get pricing error:", error);
@@ -571,15 +380,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ATXP status
+  // ATXP status - simplified for SDK-only mode
   app.get("/api/atxp/status", async (req, res) => {
     try {
       const status = atxpService.getConnectionStatus();
-      const balance = await atxpService.getAccountBalance();
       
       res.json({
         ...status,
-        balance,
+        balance: 'Managed by MCP server via SDK'
       });
     } catch (error) {
       console.error("ATXP status error:", error);

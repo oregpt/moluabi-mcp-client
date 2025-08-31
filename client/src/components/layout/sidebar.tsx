@@ -120,7 +120,11 @@ export default function Sidebar({
             {(atxpStatus as any)?.balance !== undefined && (
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">Balance</span>
-                <span className="text-xs font-medium text-primary">${(atxpStatus as any).balance.toFixed(2)}</span>
+                <span className="text-xs font-medium text-primary">
+                  {typeof (atxpStatus as any)?.balance === 'number' 
+                    ? `$${(atxpStatus as any).balance.toFixed(2)}` 
+                    : (atxpStatus as any)?.balance || 'N/A'}
+                </span>
               </div>
             )}
           </div>
