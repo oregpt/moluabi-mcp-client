@@ -63,9 +63,10 @@ export class AtxpService {
       const { atxpClient } = await import('@atxp/client');
       const { ConsoleLogger, LogLevel } = await import('@atxp/common');
 
-      // Create ATXP client for this MCP server
+      // Create ATXP client for this MCP server - use correct MCP endpoint
+      const mcpEndpoint = `${serverUrl}/mcp/call`;
       const client = await atxpClient({
-        mcpServer: serverUrl,
+        mcpServer: mcpEndpoint,
         account: this.atxpAccount,
         allowedAuthorizationServers: [
           'https://auth.atxp.ai',
