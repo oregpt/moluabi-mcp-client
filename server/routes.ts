@@ -438,6 +438,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEST: Call working ATXP server with our exact same client implementation
+  app.get("/api/test-working-server", async (req, res) => {
+    try {
+      console.log('Testing our ATXP client against known working server');
+      
+      // Use our exact same ATXP implementation but call working server
+      const result = await atxpService.callMcpTool(
+        'https://image.mcp.atxp.ai',  // Working ATXP server
+        'generate_image',  // Known working tool
+        {
+          prompt: 'test image',
+          style: 'digital_art'
+        }
+      );
+      
+      console.log('Test against working server successful:', result);
+      res.json({
+        success: true,
+        workingServerCall: result,
+        message: 'Our ATXP client works with working servers - issue is with MoluAbi server ATXP integration'
+      });
+    } catch (error) {
+      console.error('Test against working server failed:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Unknown error",
+        message: 'Our ATXP client has issues - problem is on our side'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup for real-time updates
