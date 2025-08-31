@@ -64,7 +64,21 @@ export class AtxpService {
     // Step 3: Tool Execution + Payment (single MCP call handles both)
     // Check both HTTP success AND actual response content for real status
     const hasResponse = mcpResponse && typeof mcpResponse === 'object';
-    const responseText = hasResponse && mcpResponse.content && mcpResponse.content[0] ? mcpResponse.content[0].text : '';
+    
+    // Extract text from the actual response structure - try multiple possible locations
+    let responseText = '';
+    if (hasResponse) {
+      if (mcpResponse.content && mcpResponse.content[0] && mcpResponse.content[0].text) {
+        responseText = mcpResponse.content[0].text;
+      } else if (mcpResponse.message) {
+        responseText = mcpResponse.message;
+      } else if (mcpResponse.error) {
+        responseText = mcpResponse.error;
+      } else {
+        // Convert the entire response to text for display
+        responseText = JSON.stringify(mcpResponse);
+      }
+    }
     
     // Look for failure keywords in the actual response text
     const responseContainsError = responseText && (
