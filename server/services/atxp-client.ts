@@ -81,9 +81,7 @@ export class AtxpService {
           'https://auth.atxp.ai', 
           'https://atxp-accounts-staging.onrender.com/',
           'http://localhost:3001'
-        ],
-        // Add resource server configuration to help with token resolution
-        resourceServer: serverUrl
+        ]
       });
 
       console.log('ATXP client created successfully');
@@ -220,7 +218,7 @@ export class AtxpService {
       status: mcpSuccess ? 'success' : 'error',
       timestamp: new Date().toISOString(),
       details: mcpSuccess 
-        ? `${operation} executed successfully${paymentStatus === 'warning' ? ' (payment status unclear)' : paymentStatus === 'error' ? ' (payment failed)' : ''}`
+        ? `${operation} executed successfully${paymentStatus === 'error' ? ' (payment failed)' : ''}`
         : `${operation} execution failed`,
       cost: 0
     };
