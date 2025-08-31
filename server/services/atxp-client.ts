@@ -65,7 +65,7 @@ export class AtxpService {
 
       // Step 1: Try ATXP with authentication (this will handle payment authorization)
       // but expect it to fail due to format mismatch
-      let atxpAuthToken: string | undefined;
+      let atxpErrorDetails: string | undefined;
       
       try {
         const mcpEndpoint = `${serverUrl}/mcp/call`;
@@ -90,7 +90,10 @@ export class AtxpService {
         console.log(`ATXP call successful for ${toolName} with standard format`);
         return result;
       } catch (atxpError) {
+        // Capture the detailed error for debugging
+        atxpErrorDetails = atxpError instanceof Error ? atxpError.message : String(atxpError);
         console.log(`ATXP authentication attempted, proceeding with direct call using server format`);
+        console.log(`ATXP Error Details: ${atxpErrorDetails}`);
       }
 
       // Step 2: Make direct HTTP call with correct format (server expects "tool" not "name")
@@ -119,6 +122,7 @@ export class AtxpService {
       // Mark this result as coming from format adapter (not real ATXP payment)
       result.formatAdapterUsed = true;
       result.atxpPaymentFailed = true;
+      result.atxpErrorDetails = atxpErrorDetails;
       
       return result;
     } catch (error) {
@@ -211,7 +215,8 @@ export class AtxpService {
     } else if (mcpResponse?.formatAdapterUsed || mcpResponse?.atxpPaymentFailed) {
       // Format adapter was used, meaning ATXP failed and we bypassed payment
       paymentStatus = 'error';
-      paymentDetails = 'ATXP payment failed - operation completed without payment processing';
+      const errorDetails = mcpResponse?.atxpErrorDetails ? `\n\nTechnical Details: ${mcpResponse.atxpErrorDetails}` : '';
+      paymentDetails = `ATXP payment failed - operation completed without payment processing${errorDetails}`;
     } else if (!mcpSuccess) {
       paymentStatus = 'error';
       paymentDetails = 'Payment not processed due to operation failure';
