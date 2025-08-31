@@ -87,10 +87,10 @@ export class MoluAbiMcpClient {
       if (!apiKey) {
         throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
       }
-
+      
       // Add API key to arguments for authentication
       const authenticatedArguments = {
-        apiKey,
+        apiKey: apiKey.trim(), // Ensure no whitespace issues
         ...toolCall.arguments
       };
 
@@ -106,15 +106,22 @@ export class MoluAbiMcpClient {
       } else {
         // API Key method: Use /mcp/call endpoint with direct HTTP
         console.log('Using API key payment method with /mcp/call endpoint');
+        
+        const requestBody = {
+          name: toolCall.name,
+          arguments: authenticatedArguments
+        };
+        
+        // Debug final request
+        console.log('🔍 DEBUG - API key length in request:', authenticatedArguments.apiKey?.length);
+        console.log('🔍 DEBUG - Request:', JSON.stringify(requestBody, null, 2));
+        
         const response = await fetch(`${this.apiKeyServerUrl}/mcp/call`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            name: toolCall.name,
-            arguments: authenticatedArguments
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
