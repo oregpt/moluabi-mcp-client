@@ -35,15 +35,13 @@ export function PaymentMethodToggle({ className }: PaymentMethodToggleProps) {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest('/api/payment-method', {
-        method: 'POST',
-        body: { method: newMethod }
-      });
+      const response = await apiRequest('POST', '/api/payment-method', { method: newMethod });
+      const data = await response.json();
 
       setPaymentMethod(newMethod);
       toast({
         title: 'Payment Method Updated',
-        description: response.message,
+        description: data.message,
         duration: 3000,
       });
     } catch (error) {
