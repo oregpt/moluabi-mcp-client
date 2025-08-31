@@ -62,20 +62,28 @@ export class AtxpService {
     };
 
     // Step 3: Tool Execution + Payment (single MCP call handles both)
+    const mcpSuccess = mcpResponse && typeof mcpResponse === 'object' && mcpResponse.success !== false;
     const executionStep: AtxpFlowStep = {
       id: 'tool-execution-payment',
       label: 'Tool Execution + Payment',
-      status: mcpResponse?.success ? 'success' : 'error',
+      status: mcpSuccess ? 'success' : 'error',
       timestamp: new Date().toISOString(),
-      details: `Executing ${operation} with integrated payment processing via MCP server`,
+      details: mcpSuccess 
+        ? `Executing ${operation} with integrated payment processing via MCP server`
+        : `${operation} execution failed on MCP server`,
       cost: cost
     };
 
-    // Step 4: Payment Confirmation (SDK confirms payment was processed)
-    const paymentStatus = mcpResponse?.paymentProcessed !== false ? 'success' : 'warning';
-    const paymentDetails = mcpResponse?.paymentProcessed !== false 
+    // Step 4: Payment Confirmation (reflects actual MCP server payment status)
+    // If MCP server failed, payment was definitely not processed
+    // If MCP server succeeded, we assume payment was processed unless explicitly told otherwise
+    const paymentWasProcessed = mcpSuccess && mcpResponse?.paymentFailed !== true;
+    const paymentStatus = paymentWasProcessed ? 'success' : (mcpSuccess ? 'warning' : 'error');
+    const paymentDetails = paymentWasProcessed
       ? 'Payment processed successfully through ATXP SDK'
-      : 'Payment APIs unavailable - continuing in prototype mode';
+      : mcpSuccess 
+        ? 'Payment APIs unavailable - operation completed in prototype mode'
+        : 'Payment not processed due to operation failure';
     
     const paymentStep: AtxpFlowStep = {
       id: 'payment-confirmation',
@@ -83,16 +91,16 @@ export class AtxpService {
       status: paymentStatus,
       timestamp: new Date().toISOString(),
       details: paymentDetails,
-      cost: paymentStatus === 'success' ? cost : 0
+      cost: paymentWasProcessed ? cost : 0
     };
 
     // Step 5: Operation Complete
     const completionStep: AtxpFlowStep = {
       id: 'operation-complete',
       label: 'Operation Complete',
-      status: mcpResponse?.success ? 'success' : 'error',
+      status: mcpSuccess ? 'success' : 'error',
       timestamp: new Date().toISOString(),
-      details: mcpResponse?.success 
+      details: mcpSuccess 
         ? `${operation} executed successfully${paymentStatus === 'warning' ? ' (payment in prototype mode)' : ''}`
         : `${operation} execution failed`,
       cost: 0
