@@ -82,58 +82,15 @@ export class MoluAbiMcpClient {
         ...toolCall.arguments
       };
 
-      if (this.paymentMethod === 'atxp') {
-        // ATXP method: Use unified endpoint with ATXP OAuth token
-        console.log('Using ATXP payment method with unified JSON-RPC endpoint');
-        const result = await atxpService.callMcpTool(
-          this.serverUrl,
-          toolCall.name,
-          authenticatedArguments
-        );
-        return result as McpResponse;
-      } else {
-        // API Key method: Use unified endpoint with direct JSON-RPC call
-        console.log('Using API Key method with unified JSON-RPC endpoint');
-        const requestBody = {
-          "jsonrpc": "2.0",
-          "method": "tools/call",
-          "params": {
-            "name": toolCall.name,
-            "arguments": authenticatedArguments
-          },
-          "id": Math.floor(Math.random() * 1000)
-        };
-        
-        const response = await fetch(this.serverUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`MCP server responded with status ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        
-        // Convert JSON-RPC response to McpResponse format
-        if (result.result && result.result.content) {
-          return result.result as McpResponse;
-        } else if (result.error) {
-          throw new Error(`MCP error: ${result.error.message || result.error}`);
-        } else {
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify(result)
-            }]
-          } as McpResponse;
-        }
-      }
+      // Both methods now use ATXP authentication - only difference is cost
+      console.log(`Using ${this.paymentMethod === 'atxp' ? 'ATXP Billing' : 'Free Tier'} with ATXP authentication and unified JSON-RPC endpoint`);
+      
+      const result = await atxpService.callMcpTool(
+        this.serverUrl,
+        toolCall.name,
+        authenticatedArguments
+      );
+      return result as McpResponse;
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
       throw error;
@@ -211,34 +168,12 @@ export class MoluAbiMcpClient {
         throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
       }
 
-      // Use unified JSON-RPC endpoint for both payment methods
-      const requestBody = {
-        "jsonrpc": "2.0",
-        "method": "tools/call",
-        "params": {
-          "name": "get_pricing",
-          "arguments": { apiKey }
-        },
-        "id": Math.floor(Math.random() * 1000)
-      };
-      
-      const response = await fetch(this.serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get pricing: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.result) {
-        return result.result;
-      }
+      // Use ATXP authentication for pricing (both methods use same auth)
+      const result = await atxpService.callMcpTool(
+        this.serverUrl,
+        'get_pricing',
+        { apiKey }
+      );
       return result;
     } catch (error) {
       console.error("Failed to get pricing from MCP server:", error);
