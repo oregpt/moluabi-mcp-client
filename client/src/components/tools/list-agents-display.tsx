@@ -40,9 +40,32 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
   });
   
   // Extract agents and cost from nested MCP response
-  // MCP returns: {success: true, agents: {success: true, agents: [...]}, cost: 0.001}
-  const mcpData = agentsResponse?.agents || agentsResponse;
-  const agents = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
+  // Handle different response formats:
+  // 1. Direct: {success: true, agents: [...], cost: 0.001}
+  // 2. MCP content format: {content: [{text: "[PAYMENT_FAILED] ... {agents: [...]}"}]}
+  let agents = [];
+  let mcpData = agentsResponse?.agents || agentsResponse;
+  
+  // Check if response is in MCP content format with embedded JSON
+  if (agentsResponse?.content && Array.isArray(agentsResponse.content) && agentsResponse.content[0]?.text) {
+    const textContent = agentsResponse.content[0].text;
+    
+    // Extract JSON from text content (remove [PAYMENT_FAILED] prefix if present)
+    const jsonStart = textContent.indexOf('{');
+    if (jsonStart !== -1) {
+      try {
+        const jsonText = textContent.substring(jsonStart);
+        const parsedData = JSON.parse(jsonText);
+        agents = parsedData.agents || [];
+      } catch (e) {
+        console.error('Failed to parse embedded JSON from response:', e);
+        agents = [];
+      }
+    }
+  } else {
+    // Handle traditional format
+    agents = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
+  }
   const lastCost = agentsResponse?.cost || mcpData?.cost || 0.001;
 
   const refreshMutation = useMutation({
@@ -53,8 +76,26 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
     },
     onSuccess: (data) => {
       const cost = data?.cost || lastCost || 0.001;
-      const mcpData = data?.agents || data;
-      const agentsList = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
+      let agentsList = [];
+      
+      // Parse agents from response (handle MCP content format)
+      if (data?.content && Array.isArray(data.content) && data.content[0]?.text) {
+        const textContent = data.content[0].text;
+        const jsonStart = textContent.indexOf('{');
+        if (jsonStart !== -1) {
+          try {
+            const jsonText = textContent.substring(jsonStart);
+            const parsedData = JSON.parse(jsonText);
+            agentsList = parsedData.agents || [];
+          } catch (e) {
+            console.error('Failed to parse embedded JSON from refresh response:', e);
+          }
+        }
+      } else {
+        const mcpData = data?.agents || data;
+        agentsList = Array.isArray(mcpData) ? mcpData : mcpData?.agents || [];
+      }
+      
       onExecute(cost);
       toast({
         title: "Agents list refreshed!",
