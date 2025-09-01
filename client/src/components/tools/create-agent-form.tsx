@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,22 @@ interface CreateAgentFormProps {
 
 export default function CreateAgentForm({ onExecute, showLoading, hideLoading }: CreateAgentFormProps) {
   const { toast } = useToast();
+  const [paymentMethod, setPaymentMethod] = useState<'apikey' | 'atxp'>('apikey');
+  
+  // Load current payment method
+  useEffect(() => {
+    const loadPaymentMethod = async () => {
+      try {
+        const response = await fetch('/api/payment-method');
+        const data = await response.json();
+        setPaymentMethod(data.paymentMethod || 'apikey');
+      } catch (error) {
+        console.error('Failed to load payment method:', error);
+      }
+    };
+    
+    loadPaymentMethod();
+  }, []);
   
   const form = useForm<CreateAgentForm>({
     resolver: zodResolver(createAgentSchema),
@@ -51,6 +67,23 @@ export default function CreateAgentForm({ onExecute, showLoading, hideLoading }:
       return response.json();
     },
     onSuccess: (data) => {
+      // Check for payment failure in ATXP mode
+      let hasPaymentFailure = false;
+      if (data?.content && Array.isArray(data.content) && data.content[0]?.text) {
+        hasPaymentFailure = data.content[0].text.includes('[PAYMENT_FAILED]');
+      }
+      
+      // If ATXP mode and payment failed, show error instead of success
+      if (paymentMethod === 'atxp' && hasPaymentFailure) {
+        toast({
+          title: "Payment Failed",
+          description: "Call failed due to payment validation failure. Switch to Free mode or ensure your ATXP account has sufficient funds.",
+          variant: "destructive",
+        });
+        hideLoading();
+        return;
+      }
+      
       // Use actual cost if available, fallback to 0.05
       const actualCost = data.cost || 0.05;
       onExecute(actualCost);

@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -13,6 +14,22 @@ interface ListAgentsDisplayProps {
 
 export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading }: ListAgentsDisplayProps) {
   const { toast } = useToast();
+  const [paymentMethod, setPaymentMethod] = useState<'apikey' | 'atxp'>('apikey');
+  
+  // Load current payment method
+  useEffect(() => {
+    const loadPaymentMethod = async () => {
+      try {
+        const response = await fetch('/api/payment-method');
+        const data = await response.json();
+        setPaymentMethod(data.paymentMethod || 'apikey');
+      } catch (error) {
+        console.error('Failed to load payment method:', error);
+      }
+    };
+    
+    loadPaymentMethod();
+  }, []);
 
   const { data: agentsResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/agents'],
@@ -45,10 +62,14 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
   // 2. MCP content format: {content: [{text: "[PAYMENT_FAILED] ... {agents: [...]}"}]}
   let agents = [];
   let mcpData = agentsResponse?.agents || agentsResponse;
+  let hasPaymentFailure = false;
   
   // Check if response is in MCP content format with embedded JSON
   if (agentsResponse?.content && Array.isArray(agentsResponse.content) && agentsResponse.content[0]?.text) {
     const textContent = agentsResponse.content[0].text;
+    
+    // Check for payment failure prefix
+    hasPaymentFailure = textContent.includes('[PAYMENT_FAILED]');
     
     // Extract JSON from text content (remove [PAYMENT_FAILED] prefix if present)
     const jsonStart = textContent.indexOf('{');
@@ -192,6 +213,14 @@ export default function ListAgentsDisplay({ onExecute, showLoading, hideLoading 
               </div>
             ))}
           </div>
+        </div>
+      ) : paymentMethod === 'atxp' && hasPaymentFailure ? (
+        <div className="p-6 text-center">
+          <i className="fas fa-exclamation-triangle text-destructive text-3xl mb-4"></i>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Payment Failed</h3>
+          <p className="text-sm text-muted-foreground">
+            Call failed due to payment validation failure. Switch to Free mode or ensure your ATXP account has sufficient funds.
+          </p>
         </div>
       ) : agents.length === 0 ? (
         <div className="p-6 text-center">

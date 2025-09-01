@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,23 @@ export default function DynamicToolForm({
   const [result, setResult] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteData, setPendingDeleteData] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'apikey' | 'atxp'>('apikey');
   const fields = getFieldsForTool(toolName);
+  
+  // Load current payment method
+  useEffect(() => {
+    const loadPaymentMethod = async () => {
+      try {
+        const response = await fetch('/api/payment-method');
+        const data = await response.json();
+        setPaymentMethod(data.paymentMethod || 'apikey');
+      } catch (error) {
+        console.error('Failed to load payment method:', error);
+      }
+    };
+    
+    loadPaymentMethod();
+  }, []);
   
   const form = useForm({
     defaultValues: fields.reduce((acc, field) => {
@@ -155,6 +171,23 @@ export default function DynamicToolForm({
       return response.json();
     },
     onSuccess: (data) => {
+      // Check for payment failure in ATXP mode
+      let hasPaymentFailure = false;
+      if (data?.content && Array.isArray(data.content) && data.content[0]?.text) {
+        hasPaymentFailure = data.content[0].text.includes('[PAYMENT_FAILED]');
+      }
+      
+      // If ATXP mode and payment failed, show error instead of success
+      if (paymentMethod === 'atxp' && hasPaymentFailure) {
+        toast({
+          title: "Payment Failed",
+          description: "Call failed due to payment validation failure. Switch to Free mode or ensure your ATXP account has sufficient funds.",
+          variant: "destructive",
+        });
+        hideLoading();
+        return;
+      }
+      
       // Use actual cost from MCP response if available, fallback to config cost
       const actualCost = data?.cost || config.cost || 0;
       onExecute(actualCost);

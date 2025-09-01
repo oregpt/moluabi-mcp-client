@@ -119,8 +119,27 @@ export default function Dashboard() {
       showLoading("Fetching latest pricing from MCP server...");
       const result = await refetchPricing();
       if (result.data) {
-        // Add cost for the pricing call
         const responseData = result.data as any;
+        
+        // Check for payment failure in ATXP mode
+        let hasPaymentFailure = false;
+        if (responseData?.content && Array.isArray(responseData.content) && responseData.content[0]?.text) {
+          hasPaymentFailure = responseData.content[0].text.includes('[PAYMENT_FAILED]');
+        }
+        
+        // Get current payment method
+        const paymentMethodResponse = await fetch('/api/payment-method');
+        const paymentMethodData = await paymentMethodResponse.json();
+        const paymentMethod = paymentMethodData.paymentMethod || 'apikey';
+        
+        // If ATXP mode and payment failed, don't process the pricing data
+        if (paymentMethod === 'atxp' && hasPaymentFailure) {
+          hideLoading();
+          // Don't add to cost tracker or process data
+          return;
+        }
+        
+        // Add cost for the pricing call
         addCost(responseData?.cost || 0);
         
         // Handle ATXP flow data from pricing response

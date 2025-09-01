@@ -186,6 +186,7 @@ export class AtxpService {
       responseText.toLowerCase().includes('error:') ||
       responseText.toLowerCase().includes('failed:') ||
       responseText.toLowerCase().includes('payment failed') ||
+      responseText.toLowerCase().includes('[payment_failed]') ||
       responseText.toLowerCase().includes('unexpected status code') ||
       responseText.toLowerCase().includes('401') ||
       responseText.toLowerCase().includes('403') ||
@@ -225,10 +226,17 @@ export class AtxpService {
     let paymentStatus: 'success' | 'warning' | 'error';
     let paymentDetails: string;
     
+    // Check specifically for [PAYMENT_FAILED] prefix - this is a warning (operation succeeded but payment failed)
+    const hasPaymentFailedPrefix = responseText && responseText.includes('[PAYMENT_FAILED]');
+    
     if (mcpResponse?.atxpError) {
       // ATXP failed with error from mcp-client fallback
       paymentStatus = 'error';
       paymentDetails = mcpResponse.atxpError;
+    } else if (hasPaymentFailedPrefix) {
+      // Operation succeeded but payment failed - this is a warning
+      paymentStatus = 'warning';
+      paymentDetails = `Payment validation failed - running in test mode. Operation completed successfully but payment could not be processed.`;
     } else if (!mcpSuccess || responseContainsActualError) {
       // Operation failed OR response contains payment/server errors
       paymentStatus = 'error';

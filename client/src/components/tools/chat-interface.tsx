@@ -25,6 +25,7 @@ interface ChatInterfaceProps {
 export default function ChatInterface({ onExecute, showLoading, hideLoading }: ChatInterfaceProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [message, setMessage] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<'apikey' | 'atxp'>('apikey');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -36,6 +37,21 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // Load current payment method
+  useEffect(() => {
+    const loadPaymentMethod = async () => {
+      try {
+        const response = await fetch('/api/payment-method');
+        const data = await response.json();
+        setPaymentMethod(data.paymentMethod || 'apikey');
+      } catch (error) {
+        console.error('Failed to load payment method:', error);
+      }
+    };
+    
+    loadPaymentMethod();
+  }, []);
 
   const { data: agentsResponse } = useQuery({
     queryKey: ['/api/agents'],
@@ -61,6 +77,39 @@ export default function ChatInterface({ onExecute, showLoading, hideLoading }: C
       return response.json();
     },
     onSuccess: (data, variables) => {
+      // Check for payment failure in ATXP mode
+      let hasPaymentFailure = false;
+      if (data?.response?.content && Array.isArray(data.response.content) && data.response.content[0]?.text) {
+        hasPaymentFailure = data.response.content[0].text.includes('[PAYMENT_FAILED]');
+      }
+      
+      // If ATXP mode and payment failed, show error message in chat
+      if (paymentMethod === 'atxp' && hasPaymentFailure) {
+        const userMessage: Message = {
+          id: `user-${Date.now()}`,
+          type: 'user',
+          content: variables.message,
+          timestamp: new Date(),
+        };
+        
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          type: 'system',
+          content: "Payment Failed: Call failed due to payment validation failure. Switch to Free mode or ensure your ATXP account has sufficient funds.",
+          timestamp: new Date(),
+        };
+        
+        setMessages(prev => [...prev.slice(0, -1), userMessage, errorMessage]);
+        setMessage("");
+        
+        toast({
+          title: "Payment Failed",
+          description: "Call failed due to payment validation failure.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       onExecute(0.01);
       
       // Add user message
