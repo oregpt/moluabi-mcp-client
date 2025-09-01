@@ -61,7 +61,7 @@ export class AtxpService {
     }
   }
 
-  // ATXP SDK integration for MCP server communication
+  // ATXP SDK integration for unified JSON-RPC MCP server communication
   async callMcpTool(serverUrl: string, toolName: string, toolArguments: any): Promise<any> {
     if (!this.atxpAvailable || !this.atxpAccount) {
       throw new Error("ATXP SDK not available - package not installed or import failed");
@@ -73,9 +73,9 @@ export class AtxpService {
       console.log('Tool Name:', toolName);
       console.log('Tool Arguments:', JSON.stringify(toolArguments, null, 2));
       
-      // Create ATXP client with proper configuration for MoluAbi server
+      // Create ATXP client with unified endpoint configuration
       const client = await atxpClient({
-        mcpServer: serverUrl,
+        mcpServer: serverUrl, // Now points to unified JSON-RPC endpoint
         account: this.atxpAccount,
         allowedAuthorizationServers: [
           'https://auth.atxp.ai', 
@@ -84,9 +84,10 @@ export class AtxpService {
         ]
       });
 
-      console.log('ATXP client created successfully');
+      console.log('ATXP client created for unified JSON-RPC endpoint');
 
-      // Call the tool using ATXP SDK
+      // Call the tool using ATXP SDK with JSON-RPC format
+      // The ATXP SDK will handle JSON-RPC wrapping and OAuth token automatically
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
@@ -97,11 +98,10 @@ export class AtxpService {
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
       
-      // Check if this is the specific endpoint routing issue
+      // Check for common endpoint transition issues
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('Cannot POST /') || errorMessage.includes('HTTP 404') || errorMessage.includes('Method not found: initialize')) {
         console.log('ATXP endpoint compatibility issue detected - server may not support ATXP SDK protocol');
-        // Re-throw with a more specific message for the mcp-client fallback logic
         throw new Error(`ATXP endpoint routing issue: ${errorMessage}`);
       }
       

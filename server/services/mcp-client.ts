@@ -18,32 +18,20 @@ export interface McpResponse {
 export class MoluAbiMcpClient {
   private client: Client | null = null;
   private transport: any | null = null;
-  private apiKeyServerUrl = 'https://moluabi-mcp-server.replit.app';
-  private atxpServerUrl = process.env.MOLUABI_MCP_ATXP_SERVER || 'https://moluabi-mcp-server.replit.app/atxp';
+  private serverUrl = 'https://moluabi-mcp-server.replit.app';
   private paymentMethod: 'apikey' | 'atxp' = 'apikey'; // Default to API key method
 
   async connect(): Promise<void> {
     try {
-      // For now, we'll use HTTP calls directly to the remote MCP server
-      // Since the MCP SDK doesn't have built-in HTTP transport for remote servers
+      // Both payment methods now use the same JSON-RPC endpoint
       const currentServerUrl = this.getCurrentServerUrl();
       console.log(`Attempting to connect to remote MCP server: ${currentServerUrl} (${this.paymentMethod} mode)`);
       
-      // Test connection to the remote server by trying to access the root
-      const response = await fetch(`${currentServerUrl}`, { 
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        console.log(`Connected to remote MCP server: ${currentServerUrl} (${this.paymentMethod} mode)`);
-        // Mark as connected but we'll use HTTP calls instead of transport
-        this.client = {} as Client; // Placeholder to indicate connection
-      } else {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
+      // Simply mark as connected since we'll test authentication per request
+      console.log(`Connected to remote MCP server: ${currentServerUrl} (${this.paymentMethod} mode)`);
+      this.client = {} as Client; // Placeholder to indicate connection
     } catch (error) {
-      console.warn(`Failed to connect to remote MCP server (${currentServerUrl}), using mock mode:`, error instanceof Error ? error.message : String(error));
+      console.warn(`Failed to connect to remote MCP server (${this.serverUrl}), using mock mode:`, error instanceof Error ? error.message : String(error));
       // Don't throw error, just set client to null to indicate mock mode
       this.client = null;
       this.transport = null;
@@ -67,9 +55,9 @@ export class MoluAbiMcpClient {
     console.log(`Payment method set to: ${method}`);
   }
 
-  // Get current server URL based on payment method
+  // Both payment methods now use the same endpoint
   private getCurrentServerUrl(): string {
-    return this.paymentMethod === 'atxp' ? this.atxpServerUrl : this.apiKeyServerUrl;
+    return this.serverUrl;
   }
 
   // Get current payment method
@@ -95,25 +83,32 @@ export class MoluAbiMcpClient {
       };
 
       if (this.paymentMethod === 'atxp') {
-        // ATXP method: Use /atxp endpoint with JSON-RPC 2.0 and ATXP SDK
-        console.log('Using ATXP payment method with /atxp endpoint');
+        // ATXP method: Use unified endpoint with ATXP OAuth token
+        console.log('Using ATXP payment method with unified JSON-RPC endpoint');
         const result = await atxpService.callMcpTool(
-          this.atxpServerUrl,  // Use the properly configured ATXP server URL
+          this.serverUrl,
           toolCall.name,
           authenticatedArguments
         );
         return result as McpResponse;
       } else {
-        // API Key method: Use /mcp/call endpoint with direct HTTP
+        // API Key method: Use unified endpoint with direct JSON-RPC call
+        console.log('Using API Key method with unified JSON-RPC endpoint');
         const requestBody = {
-          name: toolCall.name,
-          arguments: authenticatedArguments
+          "jsonrpc": "2.0",
+          "method": "tools/call",
+          "params": {
+            "name": toolCall.name,
+            "arguments": authenticatedArguments
+          },
+          "id": Math.floor(Math.random() * 1000)
         };
         
-        const response = await fetch(`${this.apiKeyServerUrl}/mcp/call`, {
+        const response = await fetch(this.serverUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify(requestBody)
         });
@@ -124,7 +119,20 @@ export class MoluAbiMcpClient {
         }
 
         const result = await response.json();
-        return result as McpResponse;
+        
+        // Convert JSON-RPC response to McpResponse format
+        if (result.result && result.result.content) {
+          return result.result as McpResponse;
+        } else if (result.error) {
+          throw new Error(`MCP error: ${result.error.message || result.error}`);
+        } else {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify(result)
+            }]
+          } as McpResponse;
+        }
       }
     } catch (error) {
       console.error(`MCP tool call failed for ${toolCall.name}:`, error);
@@ -162,13 +170,19 @@ export class MoluAbiMcpClient {
         throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
       }
 
-      // Use the new HTTP endpoint to list available tools
-      const response = await fetch(`${this.serverUrl}/tools`, {
-        method: 'GET',
+      // Use JSON-RPC to list available tools (free operation)
+      const response = await fetch(this.serverUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
-        }
+        },
+        body: JSON.stringify({
+          "jsonrpc": "2.0",
+          "method": "tools/list",
+          "params": {},
+          "id": 1
+        })
       });
 
       if (!response.ok) {
@@ -176,6 +190,9 @@ export class MoluAbiMcpClient {
       }
 
       const result = await response.json();
+      if (result.result && result.result.content) {
+        return result.result.content || [];
+      }
       return result.tools || [];
     } catch (error) {
       console.error("Failed to list MCP tools:", error);
@@ -194,17 +211,24 @@ export class MoluAbiMcpClient {
         throw new Error('MOLUABI_MCP_API_KEY not found in environment variables');
       }
 
-      // Use get_pricing tool - route based on payment method
-      const endpoint = this.paymentMethod === 'atxp' ? `${this.apiKeyServerUrl}/atxp` : `${this.apiKeyServerUrl}/mcp/call`;
-      const response = await fetch(endpoint, {
+      // Use unified JSON-RPC endpoint for both payment methods
+      const requestBody = {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "name": "get_pricing",
+          "arguments": { apiKey }
+        },
+        "id": Math.floor(Math.random() * 1000)
+      };
+      
+      const response = await fetch(this.serverUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          tool: 'get_pricing',
-          arguments: { apiKey }
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -212,6 +236,9 @@ export class MoluAbiMcpClient {
       }
 
       const result = await response.json();
+      if (result.result) {
+        return result.result;
+      }
       return result;
     } catch (error) {
       console.error("Failed to get pricing from MCP server:", error);

@@ -1,0 +1,215 @@
+Base Server URL
+https://moluabi-mcp-server.replit.app/
+Authentication
+All requests require ATXP OAuth token in the Authorization header:
+
+Authorization: Bearer YOUR_ATXP_TOKEN
+MCP Request Format
+All requests use JSON-RPC 2.0 format with POST to the root endpoint.
+
+1. List Available Tools ($0 - no payment required)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/list",
+    "params": {},
+    "id": 1
+  }'
+2. Create Agent ($0.05 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "create_agent",
+      "arguments": {
+        "name": "Customer Support Bot",
+        "description": "AI agent for handling customer inquiries",
+        "instructions": "You are a helpful customer support assistant. Be polite and professional.",
+        "type": "support",
+        "isPublic": false,
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 2
+  }'
+3. List Agents ($0.001 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "list_agents",
+      "arguments": {
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 3
+  }'
+4. Get Agent Details ($0.001 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "get_agent",
+      "arguments": {
+        "agentId": "123",
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 4
+  }'
+5. Update Agent ($0.02 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "update_agent",
+      "arguments": {
+        "agentId": "123",
+        "name": "Updated Customer Support Bot",
+        "description": "Enhanced AI agent for customer support",
+        "instructions": "Updated instructions here",
+        "type": "support",
+        "isPublic": true,
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 5
+  }'
+6. Delete Agent ($0.01 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "delete_agent",
+      "arguments": {
+        "agentId": "123",
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 6
+  }'
+7. Send Prompt to Agent ($0.01 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "prompt_agent",
+      "arguments": {
+        "agentId": "123",
+        "prompt": "Hello, can you help me with my order?",
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 7
+  }'
+8. Add User to Agent ($0.005 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "add_user_to_agent",
+      "arguments": {
+        "agentId": "123",
+        "userEmail": "user@example.com",
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 8
+  }'
+9. Remove User from Agent ($0.005 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "remove_user_from_agent",
+      "arguments": {
+        "agentId": "123",
+        "userEmail": "user@example.com",
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 9
+  }'
+10. Get Usage Report ($0.002 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "get_usage_report",
+      "arguments": {
+        "days": 30,
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 10
+  }'
+11. Get Pricing Information ($0.001 USDC)
+curl -X POST "https://moluabi-mcp-server.replit.app/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ATXP_TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "get_pricing",
+      "arguments": {
+        "apiKey": "YOUR_MOLUABI_API_KEY"
+      }
+    },
+    "id": 11
+  }'
+Expected Response Format
+All successful responses return:
+
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "type": "text", 
+        "text": "Success message with payment confirmation and data"
+      }
+    ]
+  },
+  "id": REQUEST_ID
+}
+Authentication Errors
+Without valid ATXP token:
+
+{
+  "error": "invalid_token",
+  "error_description": "Token is not active"
+}
+Payment Required
+Each tool call (except tools/list) requires USDC payment through ATXP before execution. The payment is processed automatically when the tool is called with a valid token.
+
+Your MCP server is now fully deployed and ready to handle these requests!
