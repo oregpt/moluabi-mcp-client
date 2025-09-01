@@ -44,6 +44,11 @@ export function PaymentMethodToggle({ className }: PaymentMethodToggleProps) {
         description: data.message,
         duration: 3000,
       });
+
+      // Auto-refresh the page to ensure all components register the change
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000); // Small delay to show the toast first
     } catch (error) {
       console.error('Failed to update payment method:', error);
       toast({
