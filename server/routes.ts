@@ -148,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "get_agent",
-        arguments: { agentId }
+        arguments: { agentId: String(agentId) }
       });
       
       // Extract cost from MCP response
@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mcpResponse = await mcpClient.callTool({
         name: "update_agent",
         arguments: {
-          agentId,
+          agentId: String(agentId),
           name: req.body.name,
           description: req.body.description,
           instructions: req.body.instructions
@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call MCP server directly - it handles all payment processing via ATXP SDK
       const mcpResponse = await mcpClient.callTool({
         name: "delete_agent",
-        arguments: { agentId }
+        arguments: { agentId: String(agentId) }
       });
       
       // Extract cost from MCP response
