@@ -152,14 +152,24 @@ export class AtxpService {
       }
     }
     
-    // Look for actual failure indicators - avoid false positives from JSON structure
+    // Look for actual failure indicators - comprehensive error detection
     const responseContainsActualError = responseText && (
       responseText.toLowerCase().includes('error:') ||
       responseText.toLowerCase().includes('failed:') ||
+      responseText.toLowerCase().includes('payment failed') ||
+      responseText.toLowerCase().includes('unexpected status code') ||
+      responseText.toLowerCase().includes('401') ||
+      responseText.toLowerCase().includes('403') ||
+      responseText.toLowerCase().includes('500') ||
+      responseText.toLowerCase().includes('502') ||
+      responseText.toLowerCase().includes('503') ||
+      responseText.toLowerCase().includes('504') ||
       responseText.toLowerCase().includes('insufficient funds') ||
       responseText.toLowerCase().includes('payment declined') ||
       responseText.toLowerCase().includes('authentication failed') ||
-      responseText.toLowerCase().includes('unauthorized')
+      responseText.toLowerCase().includes('unauthorized') ||
+      responseText.toLowerCase().includes('payment server') ||
+      responseText.toLowerCase().includes('/charge endpoint')
     );
     
     // Check if response explicitly indicates success
@@ -182,7 +192,7 @@ export class AtxpService {
       cost: cost
     };
 
-    // Step 4: Payment Confirmation - pure ATXP integration
+    // Step 4: Payment Confirmation - improved error detection
     let paymentStatus: 'success' | 'warning' | 'error';
     let paymentDetails: string;
     
@@ -190,12 +200,16 @@ export class AtxpService {
       // ATXP failed with error from mcp-client fallback
       paymentStatus = 'error';
       paymentDetails = mcpResponse.atxpError;
-    } else if (!mcpSuccess) {
-      // Operation failed
+    } else if (!mcpSuccess || responseContainsActualError) {
+      // Operation failed OR response contains payment/server errors
       paymentStatus = 'error';
-      paymentDetails = 'Payment not processed due to operation failure';
+      if (responseContainsActualError) {
+        paymentDetails = `Payment processing failed: ${responseText}`;
+      } else {
+        paymentDetails = 'Payment not processed due to operation failure';
+      }
     } else {
-      // ATXP succeeded with standard MCP format
+      // True success - no errors detected and operation succeeded
       paymentStatus = 'success';
       paymentDetails = responseText 
         ? `ATXP payment processed successfully. Response: "${responseText}"`
