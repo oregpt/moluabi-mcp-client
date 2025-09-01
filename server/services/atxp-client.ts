@@ -103,6 +103,18 @@ export class AtxpService {
         console.log('🔴 Authentication Status: No valid token available');
       }
       
+      // Log the request structure that will be sent (JSON-RPC format)
+      const requestPayload = {
+        name: toolName,
+        arguments: toolArguments,
+      };
+      console.log('📤 RAW REQUEST STRUCTURE:');
+      console.log('- Method: POST');
+      console.log('- URL: https://moluabi-mcp-server.replit.app/');
+      console.log('- Headers: Authorization: Bearer <token> (managed by ATXP SDK)');
+      console.log('- Content-Type: application/json');
+      console.log('- Body (JSON-RPC):', JSON.stringify(requestPayload, null, 2));
+      
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
