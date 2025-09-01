@@ -68,10 +68,11 @@ export class AtxpService {
     }
 
     try {
-      console.log(`Making ATXP SDK call for ${toolName}`);
+      console.log(`\n=== MAKING ATXP SDK CALL FOR ${toolName.toUpperCase()} ===`);
       console.log('Server URL:', serverUrl);
       console.log('Tool Name:', toolName);
       console.log('Tool Arguments:', JSON.stringify(toolArguments, null, 2));
+      console.log('=== REQUEST DETAILS START ===');
       
       // Create ATXP client with unified endpoint configuration
       const client = await atxpClient({
@@ -88,12 +89,19 @@ export class AtxpService {
 
       // Call the tool using ATXP SDK with JSON-RPC format
       // The ATXP SDK will handle JSON-RPC wrapping and OAuth token automatically
+      console.log('=== CALLING MCP TOOL ===');
+      console.log('Request payload structure:');
+      console.log('- Tool Name:', toolName);
+      console.log('- Arguments:', JSON.stringify(toolArguments, null, 2));
+      
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
       });
       
-      console.log(`ATXP call successful for ${toolName}:`, result);
+      console.log('=== RESPONSE RECEIVED ===');
+      console.log(`Full raw response for ${toolName}:`, JSON.stringify(result, null, 2));
+      console.log('=== RESPONSE DETAILS END ===\n');
       return result;
     } catch (error) {
       console.error(`ATXP call failed for ${toolName}:`, error);
