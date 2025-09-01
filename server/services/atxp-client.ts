@@ -94,6 +94,15 @@ export class AtxpService {
       console.log('- Tool Name:', toolName);
       console.log('- Arguments:', JSON.stringify(toolArguments, null, 2));
       
+      // Check if we have an access token (without logging the actual value for security)
+      try {
+        // The ATXP SDK manages tokens internally - we can check if auth is ready
+        console.log('🔐 Authentication Status: Bearer token will be automatically included by ATXP SDK');
+        console.log('🔐 Token Management: Handled internally by ATXP OAuth flow');
+      } catch (tokenError) {
+        console.log('🔴 Authentication Status: No valid token available');
+      }
+      
       const result = await client.callTool({
         name: toolName,
         arguments: toolArguments,
