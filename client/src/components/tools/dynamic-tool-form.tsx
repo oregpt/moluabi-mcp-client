@@ -137,7 +137,13 @@ export default function DynamicToolForm({
 
   const toolMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
-      const formData = { ...data, userId: "user_demo_123" };
+      // Convert agentId to string for all operations that need it
+      const formData = { 
+        ...data, 
+        userId: "user_demo_123",
+        // Ensure agentId is always a string when present
+        ...(data.agentId && { agentId: String(data.agentId) })
+      };
       
       // Debug logs removed - user access tools are now working
       
@@ -146,15 +152,15 @@ export default function DynamicToolForm({
       
       switch (toolName) {
         case 'get_agent':
-          endpoint = `/api/agents/${data.agentId}?userId=user_demo_123`;
+          endpoint = `/api/agents/${String(data.agentId)}?userId=user_demo_123`;
           method = "GET";
           break;
         case 'update_agent':
-          endpoint = `/api/agents/${data.agentId}`;
+          endpoint = `/api/agents/${String(data.agentId)}`;
           method = "PUT";
           break;
         case 'delete_agent':
-          endpoint = `/api/agents/${data.agentId}?userId=user_demo_123`;
+          endpoint = `/api/agents/${String(data.agentId)}?userId=user_demo_123`;
           method = "DELETE";
           break;
         case 'get_usage_report':
